@@ -1,3 +1,16 @@
+// Firebase Configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyBY1BuHTiTGd4yKkSe-zQuFRcT6UZBKJsg",
+    authDomain: "inspeksi-341a8.firebaseapp.com",
+    projectId: "inspeksi-341a8",
+    storageBucket: "inspeksi-341a8.firebasestorage.app",
+    messagingSenderId: "799654508292",
+    appId: "1:799654508292:web:8a0c2e95af5076b0088251",
+    measurementId: "G-0NF9YZBHK3"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 const checklists = {
     apar: [
         "APAR Mudah dilihat dan jelas",
@@ -124,8 +137,8 @@ function showDashboard() {
 
 let dashboardChartInstance = null;
 
-function updateDashboardOverview() {
-    const reports = getReports();
+async function updateDashboardOverview() {
+    const reports = await getReports();
     
     document.getElementById('dash-tot-laporan').innerText = reports.length;
     
@@ -626,7 +639,7 @@ async function exportPDF() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
-    saveReport(false);
+    await saveReport(false);
 
     let formattedDate = '-';
     if(data.tanggal) {
@@ -828,21 +841,32 @@ async function exportPDF() {
 
 // ----------------- HISTORY & STATS LOGIC -----------------
 
-function getReports() {
-    const data = localStorage.getItem('k3_reports');
-    return data ? JSON.parse(data) : [];
+async function getReports() {
+    try {
+        const snapshot = await db.collection('reports').get();
+        const reports = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            data.id = doc.id; // doc id from firestore
+            reports.push(data);
+        });
+        return reports;
+    } catch(err) {
+        console.error("Error getting reports: ", err);
+        return [];
+    }
 }
 
-function saveReport(showAlert = true) {
+async function saveReport(showAlert = true) {
     const form = document.getElementById('inspection-form');
     if(!form.checkValidity()) {
         form.reportValidity();
         return;
     }
+    syncQuillToInputs();
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
-    // Clean files
     for (let key in data) {
         if (data[key] instanceof File) {
             delete data[key];
@@ -851,41 +875,41 @@ function saveReport(showAlert = true) {
     
     data.aparCount = aparCount;
     data.deletedApars = Array.from(deletedApars);
+    data.report_id = Date.now().toString();
     
-    const reports = getReports();
-    const id = Date.now().toString();
-    data.report_id = id;
-    
-    reports.push(data);
-    localStorage.setItem('k3_reports', JSON.stringify(reports));
-    
-    // Clear draft after final save
-    localStorage.removeItem('k3_inspection_draft');
-    
-    if(showAlert) {
-        alert('Data berhasil disimpan permanen ke dalam Riwayat & Statistik!');
-        showRiwayat();
+    try {
+        await db.collection('reports').add(data);
+        localStorage.removeItem('k3_inspection_draft');
+        if(showAlert) {
+            alert('Data berhasil disimpan permanen ke dalam Cloud Firebase!');
+            showRiwayat();
+        }
+    } catch(err) {
+        console.error("Error saving report: ", err);
+        if(showAlert) alert('Gagal menyimpan laporan ke Cloud Firebase.');
     }
 }
 
-function saveReportAndAlert() {
-    saveReport(true);
+async function saveReportAndAlert() {
+    await saveReport(true);
 }
 
-function renderRiwayat() {
-    const reports = getReports();
+async function renderRiwayat() {
     const container = document.getElementById('riwayat-container');
     const emptyState = document.getElementById('riwayat-empty');
     
+    container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10"><i class="fa-solid fa-spinner fa-spin text-3xl"></i><p class="mt-2">Memuat data dari Firebase...</p></div>';
+    emptyState.classList.add('hidden');
+    container.classList.remove('hidden');
+
+    const reports = await getReports();
     container.innerHTML = '';
+    
     if(reports.length === 0) {
         container.classList.add('hidden');
         emptyState.classList.remove('hidden');
         return;
     }
-    
-    container.classList.remove('hidden');
-    emptyState.classList.add('hidden');
     
     // Sort descending by id (timestamp)
     reports.sort((a, b) => b.report_id - a.report_id);
@@ -904,10 +928,10 @@ function renderRiwayat() {
             <p class="text-sm text-gray-500 mb-4">${report.lokasi || '-'}</p>
             
             <div class="pt-4 border-t border-gray-100 flex gap-2">
-                <button onclick="loadReport('${report.report_id}')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-dark py-2 rounded-lg text-sm font-bold transition">
+                <button onclick="loadReport('${report.id}')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-dark py-2 rounded-lg text-sm font-bold transition">
                     Buka Data
                 </button>
-                <button onclick="deleteReport('${report.report_id}')" class="px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition" title="Hapus">
+                <button onclick="deleteReport('${report.id}')" class="px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition" title="Hapus">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
             </div>
@@ -916,11 +940,11 @@ function renderRiwayat() {
     });
 }
 
-function loadReport(id) {
+async function loadReport(id) {
     if(!confirm('Data form saat ini akan tertimpa. Lanjutkan?')) return;
     
-    const reports = getReports();
-    const data = reports.find(r => r.report_id === id);
+    const reports = await getReports();
+    const data = reports.find(r => r.id === id);
     if(data) {
         localStorage.setItem('k3_inspection_draft', JSON.stringify(data));
         
@@ -934,20 +958,27 @@ function loadReport(id) {
     }
 }
 
-function deleteReport(id) {
-    if(confirm('Yakin ingin menghapus riwayat laporan ini permanen?')) {
-        let reports = getReports();
-        reports = reports.filter(r => r.report_id !== id);
-        localStorage.setItem('k3_reports', JSON.stringify(reports));
-        renderRiwayat();
+async function deleteReport(id) {
+    if(confirm('Yakin ingin menghapus riwayat laporan ini permanen dari Cloud?')) {
+        try {
+            await db.collection('reports').doc(id).delete();
+            renderRiwayat();
+        } catch(err) {
+            console.error("Error deleting document: ", err);
+            alert("Gagal menghapus laporan dari Firebase.");
+        }
     }
 }
 
-function renderStatistik() {
-    const reports = getReports();
+async function renderStatistik() {
     const container = document.getElementById('statistik-container');
     const emptyState = document.getElementById('statistik-empty');
     
+    container.innerHTML = '<div class="text-center text-gray-500 py-10"><i class="fa-solid fa-spinner fa-spin text-3xl"></i><p class="mt-2">Memuat statistik dari Firebase...</p></div>';
+    emptyState.classList.add('hidden');
+    container.classList.remove('hidden');
+
+    const reports = await getReports();    
     container.innerHTML = '';
     if(reports.length === 0) {
         container.classList.add('hidden');
