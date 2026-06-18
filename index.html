@@ -428,10 +428,10 @@
                             <button type="button" onclick="resetForm()" class="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-bold transition-colors">
                                 Reset
                             </button>
-                            <button type="button" onclick="saveDraft()" class="px-5 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-lg text-sm font-bold transition-colors" title="Simpan sementara untuk dilanjutkan nanti">
+                            <button type="button" id="btn-draft" onclick="saveDraft()" class="px-5 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-lg text-sm font-bold transition-colors" title="Simpan sementara untuk dilanjutkan nanti">
                                 Simpan Draf
                             </button>
-                            <button type="button" onclick="saveReportAndAlert()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors" title="Simpan permanen ke Riwayat & Statistik">
+                            <button type="button" id="btn-final" onclick="saveReportAndAlert()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors" title="Simpan permanen ke Riwayat & Statistik">
                                 <i class="fa-solid fa-floppy-disk mr-2"></i> Simpan Final
                             </button>
                             <button type="button" id="btn-export" onclick="exportPDF()" class="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold transition-colors flex items-center" title="Simpan & Cetak PDF">

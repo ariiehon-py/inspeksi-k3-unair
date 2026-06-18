@@ -562,7 +562,11 @@ function showPreview(input, previewId) {
     }
 }
 
+let isSaving = false;
+
 async function saveToFirestore(statusStr, showAlert = true) {
+    if (isSaving) return false;
+    
     syncQuillToInputs();
     const form = document.getElementById('inspection-form');
     
@@ -572,6 +576,13 @@ async function saveToFirestore(statusStr, showAlert = true) {
             return false;
         }
     }
+    
+    isSaving = true;
+    const btnDraft = document.getElementById('btn-draft');
+    const btnFinal = document.getElementById('btn-final');
+    
+    if (btnDraft) { btnDraft.disabled = true; btnDraft.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...'; }
+    if (btnFinal) { btnFinal.disabled = true; btnFinal.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...'; }
     
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
@@ -585,7 +596,11 @@ async function saveToFirestore(statusStr, showAlert = true) {
     data.aparCount = aparCount;
     data.deletedApars = Array.from(deletedApars);
     data.status = statusStr;
-    data.report_id = data.report_id || Date.now().toString();
+    
+    // Jangan menimpa report_id jika sudah ada, buat baru HANYA JIKA belum punya ID (inspeksi baru)
+    if (!currentDocId || !data.report_id) {
+        data.report_id = Date.now().toString();
+    }
     
     try {
         if(currentDocId) {
@@ -602,8 +617,12 @@ async function saveToFirestore(statusStr, showAlert = true) {
         return true;
     } catch(err) {
         console.error("Error saving report: ", err);
-        if(showAlert) alert('Gagal menyimpan ke server.');
+        if(showAlert) alert('Gagal menyimpan ke server. Pastikan koneksi internet stabil.');
         return false;
+    } finally {
+        isSaving = false;
+        if (btnDraft) { btnDraft.disabled = false; btnDraft.innerHTML = 'Simpan Draf'; }
+        if (btnFinal) { btnFinal.disabled = false; btnFinal.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Simpan Final'; }
     }
 }
 
