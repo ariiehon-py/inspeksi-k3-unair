@@ -1,0 +1,2 @@
+Silakan letakkan file gambar logo K3 di folder ini.
+Pastikan nama filenya diubah menjadi: logo.png

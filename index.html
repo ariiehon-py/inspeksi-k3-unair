@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspeksi K3 Universitas Airlangga</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#16a34a', // Green 600
+                        'primary-dark': '#15803d', // Green 700
+                        secondary: '#22c55e', // Green 500
+                        dark: '#0f172a', // Slate 900 for texts
+                        accent: '#f0fdf4' // Green 50
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="text-gray-800 bg-[#f8fafc]">
+
+    <!-- LOGIN VIEW -->
+    <div id="login-view" class="min-h-screen flex items-center justify-center bg-[#f8fafc] hidden px-4">
+        <div class="bg-white p-8 md:p-10 rounded-2xl shadow-sm border border-gray-200 w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 mx-auto mb-4 bg-white rounded-2xl border border-gray-100 p-2 shadow-sm">
+                    <img src="assets/logo.png" alt="Logo K3" class="w-full h-full object-contain">
+                </div>
+                <h1 class="text-2xl font-bold text-dark">Portal Inspeksi K3</h1>
+                <p class="text-sm text-gray-500 mt-1">Universitas Airlangga</p>
+            </div>
+            <form onsubmit="login(event)" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Username</label>
+                    <input type="text" id="username" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:bg-white focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="Masukkan username..." required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:bg-white focus:ring-2 focus:ring-primary focus:border-transparent transition" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary-dark transition mt-4">
+                    Masuk ke Sistem
+                </button>
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 text-center mt-4">
+                    <p class="text-xs font-medium text-gray-600"><i class="fa-solid fa-circle-info mr-1"></i> Dummy login: <strong>admin</strong> / <strong>admin</strong></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP VIEW -->
+    <div id="app-view" class="hidden pb-20">
+        
+        <!-- Modern Navbar -->
+        <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <div class="flex items-center gap-3 cursor-pointer" onclick="showDashboard()">
+                        <img src="assets/logo.png" alt="Logo K3" class="w-9 h-9 object-contain">
+                    </div>
+                    <div class="hidden md:flex items-center gap-6 font-semibold text-sm text-gray-600">
+                        <a href="#" onclick="showDashboard()" class="text-dark hover:text-primary transition">Beranda</a>
+                        <a href="#" onclick="showRiwayat()" class="hover:text-primary transition">Riwayat</a>
+                        <button onclick="logout()" class="bg-gray-100 text-gray-700 px-5 py-2 rounded-lg hover:bg-gray-200 transition font-bold">
+                            Keluar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- DASHBOARD VIEW -->
+        <div id="dashboard-view" class="block animate-fade-in pt-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+                <div class="text-center md:text-left mb-8">
+                    <h1 class="text-3xl font-bold text-dark mb-2">Safety Toolkit</h1>
+                    <p class="text-gray-500">Temukan berbagai fitur untuk mendukung keselamatan kerjamu!</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer flex gap-4 items-start" onclick="startInspection()">
+                        <div class="bg-green-50 text-primary p-3 rounded-xl shrink-0">
+                            <i class="fa-solid fa-clipboard-check text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-dark text-lg mb-1">Mulai Inspeksi Baru</h3>
+                            <p class="text-sm text-gray-500 leading-relaxed">Isi formulir inspeksi lapangan, identifikasi area, APAR, dan sarana proteksi pasif.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer flex gap-4 items-start" onclick="showStatistik()">
+                        <div class="bg-blue-50 text-blue-600 p-3 rounded-xl shrink-0">
+                            <i class="fa-solid fa-chart-pie text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-dark text-lg mb-1">Statistik Fakultas</h3>
+                            <p class="text-sm text-gray-500 leading-relaxed">Lihat rekapitulasi data tingkat kesesuaian dari 17+ fakultas dan unit.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer flex gap-4 items-start" onclick="showRiwayat()">
+                        <div class="bg-orange-50 text-orange-600 p-3 rounded-xl shrink-0">
+                            <i class="fa-solid fa-folder-open text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-dark text-lg mb-1">Riwayat Inspeksi</h3>
+                            <p class="text-sm text-gray-500 leading-relaxed">Akses kembali draf laporan atau draf yang telah tersimpan.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OVERVIEW STATS -->
+                <div class="mt-12">
+                    <h2 class="text-xl font-bold text-dark mb-6">Ringkasan Sistem</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-1 space-y-4">
+                            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-bold mb-1">Total Laporan</p>
+                                    <h4 class="text-3xl font-black text-dark" id="dash-tot-laporan">0</h4>
+                                </div>
+                                <div class="bg-gray-50 w-12 h-12 rounded-full flex items-center justify-center text-gray-400">
+                                    <i class="fa-solid fa-file-lines text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-bold mb-1">Fakultas Terinspeksi</p>
+                                    <h4 class="text-3xl font-black text-dark" id="dash-tot-fakultas">0</h4>
+                                </div>
+                                <div class="bg-blue-50 w-12 h-12 rounded-full flex items-center justify-center text-blue-500">
+                                    <i class="fa-solid fa-building-columns text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-bold mb-1">Total APAR</p>
+                                    <h4 class="text-3xl font-black text-dark" id="dash-tot-apar">0</h4>
+                                </div>
+                                <div class="bg-green-50 w-12 h-12 rounded-full flex items-center justify-center text-green-500">
+                                    <i class="fa-solid fa-fire-extinguisher text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                            <h3 class="text-sm font-bold text-gray-500 mb-4">Grafik Kesesuaian K3 per Fakultas</h3>
+                            <div class="relative h-64 w-full">
+                                <canvas id="dashboardChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- FORM VIEW -->
+        <div id="form-view" class="hidden">
+            <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+                <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-dark mb-1">Formulir Inspeksi Lapangan</h1>
+                        <p class="text-gray-500 text-sm">Lengkapi tahapan identifikasi area, APAR, dan Proteksi Pasif per Fakultas.</p>
+                    </div>
+                    <button onclick="showDashboard()" class="text-sm font-bold text-gray-500 hover:text-dark px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm w-fit">Kembali</button>
+                </div>
+
+                <form id="inspection-form" class="space-y-6">
+                    <!-- SECTION 1: INFORMASI UMUM -->
+                    <div class="bg-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm">
+                        <h2 class="text-lg font-bold text-dark mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-building-columns text-gray-400"></i> Informasi Umum & Fakultas
+                        </h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Pilih Fakultas / Unit <span class="text-red-500">*</span></label>
+                                <select name="fakultas" required class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:bg-white focus:border-primary focus:ring-1 focus:ring-primary transition text-sm">
+                                    <option value="">-- Silakan Pilih Fakultas --</option>
+                                    <option value="Fakultas Kedokteran (FK)">Fakultas Kedokteran (FK)</option>
+                                    <option value="Fakultas Kedokteran Gigi (FKG)">Fakultas Kedokteran Gigi (FKG)</option>
+                                    <option value="Fakultas Kedokteran Hewan (FKH)">Fakultas Kedokteran Hewan (FKH)</option>
+                                    <option value="Fakultas Farmasi (FF)">Fakultas Farmasi (FF)</option>
+                                    <option value="Fakultas Keperawatan (FKp)">Fakultas Keperawatan (FKp)</option>
+                                    <option value="Fakultas Kesehatan Masyarakat (FKM)">Fakultas Kesehatan Masyarakat (FKM)</option>
+                                    <option value="Fakultas Sains dan Teknologi (FST)">Fakultas Sains dan Teknologi (FST)</option>
+                                    <option value="Fakultas Teknologi Maju dan Multidisiplin (FTMM)">Fakultas Teknologi Maju dan Multidisiplin (FTMM)</option>
+                                    <option value="Fakultas Perikanan dan Kelautan (FPK)">Fakultas Perikanan dan Kelautan (FPK)</option>
+                                    <option value="Fakultas Ekonomi dan Bisnis (FEB)">Fakultas Ekonomi dan Bisnis (FEB)</option>
+                                    <option value="Fakultas Hukum (FH)">Fakultas Hukum (FH)</option>
+                                    <option value="Fakultas Ilmu Sosial dan Ilmu Politik (FISIP)">Fakultas Ilmu Sosial dan Ilmu Politik (FISIP)</option>
+                                    <option value="Fakultas Psikologi (FPsi)">Fakultas Psikologi (FPsi)</option>
+                                    <option value="Fakultas Ilmu Budaya (FIB)">Fakultas Ilmu Budaya (FIB)</option>
+                                    <option value="Fakultas Vokasi (FV)">Fakultas Vokasi (FV)</option>
+                                    <option value="Fakultas Ilmu Kesehatan, Kedokteran, dan Ilmu Alam (FIKKIA)">Fakultas Ilmu Kesehatan, Kedokteran, dan Ilmu Alam (FIKKIA)</option>
+                                    <option value="Sekolah Pascasarjana (SPs)">Sekolah Pascasarjana (SPs)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Tanggal Inspeksi <span class="text-red-500">*</span></label>
+                                <input type="date" name="tanggal" required class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:border-primary focus:ring-1 focus:ring-primary transition text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Nama Surveyor/Inspektur <span class="text-red-500">*</span></label>
+                                <input type="text" name="surveyor" placeholder="Masukkan nama Anda..." required class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:border-primary focus:ring-1 focus:ring-primary transition text-sm">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Lokasi / Gedung Spesifik di Fakultas <span class="text-red-500">*</span></label>
+                                <input type="text" name="lokasi" placeholder="Contoh: Gedung A Lantai 2 Lorong Kanan" required class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white focus:border-primary focus:ring-1 focus:ring-primary transition text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: APAR -->
+                    <div class="bg-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                            <div>
+                                <h2 class="text-lg font-bold text-dark flex items-center gap-2">
+                                    <i class="fa-solid fa-fire-extinguisher text-gray-400"></i> Inspeksi APAR
+                                </h2>
+                            </div>
+                            <button type="button" onclick="addApar()" class="bg-gray-100 hover:bg-gray-200 text-dark border border-gray-300 px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-plus"></i> Tambah Data APAR
+                            </button>
+                        </div>
+                        
+                        <div id="apar-container">
+                            <!-- Dynamic APAR will be injected here -->
+                        </div>
+
+                        <div class="mt-8 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                            <p class="font-bold text-dark mb-4 text-sm">Kesimpulan & Rekomendasi APAR</p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Kesimpulan APAR</label>
+                                    <div id="editor-kesimpulan-apar" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="kesimpulan_apar" id="input-kesimpulan-apar">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Rekomendasi APAR</label>
+                                    <div id="editor-rekomendasi-apar" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="rekomendasi_apar" id="input-rekomendasi-apar">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detektor -->
+                    <div class="bg-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm">
+                        <h2 class="text-lg font-bold text-dark mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-sensor-fire text-gray-400"></i> Detektor Kebakaran
+                        </h2>
+                        <div class="mb-6">
+                            <label class="inline-flex items-center cursor-pointer bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors w-full sm:w-auto">
+                                <input type="checkbox" id="no-detector-cb" name="no_detector" value="1" class="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500" onchange="toggleSection('no-detector-cb', 'detector-checklist-container')">
+                                <span class="ml-3 text-sm font-bold text-gray-700">Tidak Tersedia di Area Ini</span>
+                            </label>
+                        </div>
+                        <div id="detector-checklist-container" class="space-y-0 divide-y divide-gray-100"></div>
+                        <div class="mt-8 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                            <p class="font-bold text-dark mb-4 text-sm">Kesimpulan & Rekomendasi</p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Kesimpulan</label>
+                                    <div id="editor-kesimpulan-detector" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="kesimpulan_detector" id="input-kesimpulan-detector">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Rekomendasi</label>
+                                    <div id="editor-rekomendasi-detector" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="rekomendasi_detector" id="input-rekomendasi-detector">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fire Alarm -->
+                    <div class="bg-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm">
+                        <h2 class="text-lg font-bold text-dark mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-bell text-gray-400"></i> Fire Alarm System
+                        </h2>
+                        <div class="mb-6">
+                            <label class="inline-flex items-center cursor-pointer bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors w-full sm:w-auto">
+                                <input type="checkbox" id="no-firealarm-cb" name="no_firealarm" value="1" class="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500" onchange="toggleSection('no-firealarm-cb', 'firealarm-checklist-container')">
+                                <span class="ml-3 text-sm font-bold text-gray-700">Tidak Tersedia di Area Ini</span>
+                            </label>
+                        </div>
+                        <div id="firealarm-checklist-container" class="space-y-0 divide-y divide-gray-100"></div>
+                        <div class="mt-8 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                            <p class="font-bold text-dark mb-4 text-sm">Kesimpulan & Rekomendasi</p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Kesimpulan</label>
+                                    <div id="editor-kesimpulan-firealarm" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="kesimpulan_firealarm" id="input-kesimpulan-firealarm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Rekomendasi</label>
+                                    <div id="editor-rekomendasi-firealarm" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="rekomendasi_firealarm" id="input-rekomendasi-firealarm">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Jalur Evakuasi -->
+                    <div class="bg-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm">
+                        <h2 class="text-lg font-bold text-dark mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-person-running text-gray-400"></i> Jalur Evakuasi & Safety Sign
+                        </h2>
+                        <div class="mb-6">
+                            <label class="inline-flex items-center cursor-pointer bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors w-full sm:w-auto">
+                                <input type="checkbox" id="no-evakuasi-cb" name="no_evakuasi" value="1" class="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500" onchange="toggleSection('no-evakuasi-cb', 'evakuasi-checklist-container')">
+                                <span class="ml-3 text-sm font-bold text-gray-700">Tidak Tersedia di Area Ini</span>
+                            </label>
+                        </div>
+                        <div id="evakuasi-checklist-container" class="space-y-0 divide-y divide-gray-100"></div>
+                        <div class="mt-8 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                            <p class="font-bold text-dark mb-4 text-sm">Kesimpulan & Rekomendasi</p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Kesimpulan</label>
+                                    <div id="editor-kesimpulan-evakuasi" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="kesimpulan_evakuasi" id="input-kesimpulan-evakuasi">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Rekomendasi</label>
+                                    <div id="editor-rekomendasi-evakuasi" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="rekomendasi_evakuasi" id="input-rekomendasi-evakuasi">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pintu Darurat -->
+                    <div class="bg-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm">
+                        <h2 class="text-lg font-bold text-dark mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-door-open text-gray-400"></i> Pintu Darurat
+                        </h2>
+                        <div class="mb-6">
+                            <label class="inline-flex items-center cursor-pointer bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors w-full sm:w-auto">
+                                <input type="checkbox" id="no-pintu-cb" name="no_pintudarurat" value="1" class="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500" onchange="toggleSection('no-pintu-cb', 'pintudarurat-checklist-container')">
+                                <span class="ml-3 text-sm font-bold text-gray-700">Tidak Tersedia di Area Ini</span>
+                            </label>
+                        </div>
+                        <div id="pintudarurat-checklist-container" class="space-y-0 divide-y divide-gray-100"></div>
+                        <div class="mt-8 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                            <p class="font-bold text-dark mb-4 text-sm">Kesimpulan & Rekomendasi</p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Kesimpulan</label>
+                                    <div id="editor-kesimpulan-pintudarurat" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="kesimpulan_pintudarurat" id="input-kesimpulan-pintudarurat">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Rekomendasi</label>
+                                    <div id="editor-rekomendasi-pintudarurat" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="rekomendasi_pintudarurat" id="input-rekomendasi-pintudarurat">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tangga Darurat -->
+                    <div class="bg-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm">
+                        <h2 class="text-lg font-bold text-dark mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-stairs text-gray-400"></i> Tangga Darurat
+                        </h2>
+                        <div class="mb-6">
+                            <label class="inline-flex items-center cursor-pointer bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors w-full sm:w-auto">
+                                <input type="checkbox" id="no-tangga-cb" name="no_tanggadarurat" value="1" class="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500" onchange="toggleSection('no-tangga-cb', 'tanggadarurat-checklist-container')">
+                                <span class="ml-3 text-sm font-bold text-gray-700">Tidak Tersedia di Area Ini</span>
+                            </label>
+                        </div>
+                        <div id="tanggadarurat-checklist-container" class="space-y-0 divide-y divide-gray-100"></div>
+                        <div class="mt-8 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                            <p class="font-bold text-dark mb-4 text-sm">Kesimpulan & Rekomendasi</p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Kesimpulan</label>
+                                    <div id="editor-kesimpulan-tanggadarurat" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="kesimpulan_tanggadarurat" id="input-kesimpulan-tanggadarurat">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 mb-1">Rekomendasi</label>
+                                    <div id="editor-rekomendasi-tanggadarurat" class="bg-white rounded-lg h-[120px]"></div>
+                                    <input type="hidden" name="rekomendasi_tanggadarurat" id="input-rekomendasi-tanggadarurat">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 4: EXPORT -->
+                    <div class="bg-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-dark mb-1">Penyelesaian Laporan</h2>
+                            <p class="text-gray-500 text-sm">Pilih aksi selanjutnya untuk data yang telah diisi.</p>
+                        </div>
+
+                        <!-- ACTION BUTTONS -->
+                        <div class="flex flex-wrap gap-3">
+                            <button type="button" onclick="resetForm()" class="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-bold transition-colors">
+                                Reset
+                            </button>
+                            <button type="button" onclick="saveDraft()" class="px-5 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-lg text-sm font-bold transition-colors" title="Simpan sementara untuk dilanjutkan nanti">
+                                Simpan Draf
+                            </button>
+                            <button type="button" onclick="saveReportAndAlert()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors" title="Simpan permanen ke Riwayat & Statistik">
+                                <i class="fa-solid fa-floppy-disk mr-2"></i> Simpan Final
+                            </button>
+                            <button type="button" id="btn-export" onclick="exportPDF()" class="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold transition-colors flex items-center" title="Simpan & Cetak PDF">
+                                <i class="fa-solid fa-file-pdf mr-2"></i> Cetak Laporan
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </main>
+        </div>
+
+        <!-- RIWAYAT VIEW -->
+        <div id="riwayat-view" class="hidden">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+                <div class="mb-8 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-dark mb-1">Riwayat Inspeksi</h1>
+                        <p class="text-gray-500 text-sm">Daftar laporan inspeksi yang telah disimpan ke sistem.</p>
+                    </div>
+                    <button onclick="showDashboard()" class="text-sm font-bold text-gray-500 hover:text-dark px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">Kembali</button>
+                </div>
+                
+                <div id="riwayat-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards will be injected here -->
+                </div>
+                
+                <div id="riwayat-empty" class="hidden text-center py-20 bg-white rounded-2xl border border-gray-200 shadow-sm mt-6">
+                    <i class="fa-solid fa-folder-open text-6xl text-gray-200 mb-4"></i>
+                    <h3 class="text-lg font-bold text-gray-800">Belum Ada Riwayat</h3>
+                    <p class="text-gray-500 text-sm mt-2">Anda belum menyimpan data inspeksi final apapun.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATISTIK VIEW -->
+        <div id="statistik-view" class="hidden">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+                <div class="mb-8 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-dark mb-1">Statistik K3 Fakultas</h1>
+                        <p class="text-gray-500 text-sm">Rekapitulasi tingkat kesesuaian proteksi kebakaran per fakultas.</p>
+                    </div>
+                    <button onclick="showDashboard()" class="text-sm font-bold text-gray-500 hover:text-dark px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">Kembali</button>
+                </div>
+
+                <div class="bg-white p-6 md:p-8 rounded-2xl border border-gray-200 shadow-sm">
+                    <h2 class="text-lg font-bold text-dark mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-bar text-blue-500"></i> Tingkat Kesesuaian K3
+                    </h2>
+                    
+                    <div id="statistik-container" class="space-y-6">
+                        <!-- Progress bars will be injected here -->
+                    </div>
+                    
+                    <div id="statistik-empty" class="hidden text-center py-10">
+                        <p class="text-gray-500 text-sm">Data statistik belum tersedia. Silakan simpan laporan terlebih dahulu.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- HIDDEN PDF TEMPLATE -->
+    <div id="pdf-template" style="display: none;">
+        <div class="p-10 bg-white text-black w-full" id="pdf-content">
+            <div class="text-center mb-8 border-b-2 border-gray-800 pb-4 flex flex-col items-center">
+                <img src="assets/logo.png" class="w-16 h-16 mb-2">
+                <h1 class="text-2xl font-bold uppercase tracking-wide text-dark">Laporan Inspeksi K3</h1>
+                <h2 class="text-xl font-semibold mt-1">Proteksi Kebakaran & Sarana Evakuasi</h2>
+                <h3 class="text-lg mt-1 font-bold text-gray-700" id="pdf-fakultas-title">Universitas Airlangga</h3>
+            </div>
+            <table class="w-full mb-8 border-collapse border border-gray-800 text-sm">
+                <tr>
+                    <td class="border border-gray-800 p-2 font-bold w-1/4 bg-gray-50">Tanggal Inspeksi</td>
+                    <td class="border border-gray-800 p-2 w-1/4" id="pdf-tanggal"></td>
+                    <td class="border border-gray-800 p-2 font-bold w-1/4 bg-gray-50">Nama Surveyor</td>
+                    <td class="border border-gray-800 p-2 w-1/4" id="pdf-surveyor"></td>
+                </tr>
+                <tr>
+                    <td class="border border-gray-800 p-2 font-bold bg-gray-50">Fakultas / Unit</td>
+                    <td class="border border-gray-800 p-2 font-semibold" colspan="3" id="pdf-fakultas"></td>
+                </tr>
+                <tr>
+                    <td class="border border-gray-800 p-2 font-bold bg-gray-50">Lokasi/Area/Gedung</td>
+                    <td class="border border-gray-800 p-2" colspan="3" id="pdf-lokasi"></td>
+                </tr>
+            </table>
+
+            <div id="pdf-dynamic-content"></div>
+
+            <div class="mt-16 flex justify-end">
+                <div class="text-center w-64">
+                    <p class="mb-1 text-sm">Mengetahui,</p>
+                    <p class="mb-20 text-sm font-semibold">Surveyor / Inspektur</p>
+                    <p class="font-bold underline text-sm" id="pdf-ttd-nama">( Nama )</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>
