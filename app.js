@@ -124,6 +124,8 @@ function showLogin() {
     document.getElementById('app-view').classList.add('hidden');
 }
 
+let currentDocId = null;
+
 function showDashboard() {
     document.getElementById('login-view').classList.add('hidden');
     document.getElementById('app-view').classList.remove('hidden');
@@ -135,18 +137,77 @@ function showDashboard() {
     updateDashboardOverview();
 }
 
+function startNewInspection() {
+    currentDocId = null;
+    document.getElementById('inspection-form').reset();
+    document.getElementById('apar-container').innerHTML = '';
+    aparCount = 0;
+    deletedApars.clear();
+    
+    // Clear Quill editors
+    if (window.quillEditors) {
+        for (let key in window.quillEditors) {
+            window.quillEditors[key].root.innerHTML = '';
+        }
+    }
+    
+    addApar();
+    startInspection();
+}
+
+function getMissingFields(data) {
+    const missing = [];
+    if (!data.fakultas) missing.push("Fakultas");
+    if (!data.lokasi) missing.push("Lokasi");
+    if (!data.tanggal) missing.push("Tanggal");
+    if (!data.surveyor) missing.push("Surveyor");
+    
+    let aparMissing = false;
+    for (let i = 1; i <= data.aparCount; i++) {
+        if (data.deletedApars && data.deletedApars.includes(i)) continue;
+        checklists.apar.forEach((_, idx) => {
+            if (!data[`apar_${i}_item_${idx}_status`]) aparMissing = true;
+        });
+    }
+    if (aparMissing) missing.push("APAR");
+    
+    const pasifSections = [
+        { key: 'detector', name: 'Detektor', cb: 'no_detector' },
+        { key: 'firealarm', name: 'Fire Alarm', cb: 'no_firealarm' },
+        { key: 'evakuasi', name: 'Evakuasi', cb: 'no_evakuasi' },
+        { key: 'pintudarurat', name: 'Pintu Darurat', cb: 'no_pintu' },
+        { key: 'tanggadarurat', name: 'Tangga Darurat', cb: 'no_tangga' }
+    ];
+    
+    pasifSections.forEach(sec => {
+        if (data[sec.cb] !== '1') {
+            let secMissing = false;
+            checklists[sec.key].forEach((_, idx) => {
+                if (!data[`${sec.key}_${idx}_status`]) secMissing = true;
+            });
+            if (secMissing) missing.push(sec.name);
+        }
+    });
+    
+    return missing;
+}
+
 let dashboardChartInstance = null;
 
 async function updateDashboardOverview() {
     const reports = await getReports();
     
-    document.getElementById('dash-tot-laporan').innerText = reports.length;
+    const finalReports = reports.filter(r => r.status === 'final' || !r.status);
+    const draftReports = reports.filter(r => r.status === 'draft');
+    
+    document.getElementById('dash-tot-laporan').innerText = finalReports.length;
+    document.getElementById('dash-tot-draf').innerText = draftReports.length;
     
     let totalApar = 0;
     const fakultasSet = new Set();
     const statsByFak = {};
 
-    reports.forEach(r => {
+    finalReports.forEach(r => {
         if(r.fakultas) fakultasSet.add(r.fakultas);
         
         for(let i=1; i<=r.aparCount; i++) {
@@ -484,25 +545,7 @@ function toggleSection(cbId, containerId) {
     }
 }
 
-function toggleAparRekomendasi() {
-    const radio = document.querySelector('input[name="isi_rekomendasi_apar"]:checked');
-    const container = document.getElementById('apar-rekomendasi-container');
-    if (radio && radio.value === 'Ya') {
-        container.classList.remove('hidden');
-    } else {
-        container.classList.add('hidden');
-    }
-}
-
-function togglePasifRekomendasi() {
-    const radio = document.querySelector('input[name="isi_rekomendasi_pasif"]:checked');
-    const container = document.getElementById('pasif-rekomendasi-container');
-    if (radio && radio.value === 'Ya') {
-        container.classList.remove('hidden');
-    } else {
-        container.classList.add('hidden');
-    }
-}
+// Removed obsolete toggleRekomendasi functions
 
 function showPreview(input, previewId) {
     const preview = document.getElementById(previewId);
@@ -519,11 +562,20 @@ function showPreview(input, previewId) {
     }
 }
 
-function saveDraft() {
-    const formData = new FormData(document.getElementById('inspection-form'));
+async function saveToFirestore(statusStr, showAlert = true) {
+    syncQuillToInputs();
+    const form = document.getElementById('inspection-form');
+    
+    if (statusStr === 'final') {
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return false;
+        }
+    }
+    
+    const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
-    // Remove files to prevent storage issues
     for (let key in data) {
         if (data[key] instanceof File) {
             delete data[key];
@@ -532,78 +584,44 @@ function saveDraft() {
     
     data.aparCount = aparCount;
     data.deletedApars = Array.from(deletedApars);
+    data.status = statusStr;
+    data.report_id = data.report_id || Date.now().toString();
     
-    localStorage.setItem('k3_inspection_draft', JSON.stringify(data));
-    
-    alert('Draf Laporan K3 Fakultas Berhasil Disimpan!');
-}
-
-function loadDraft() {
-    const draft = localStorage.getItem('k3_inspection_draft');
-    if (draft) {
-        const data = JSON.parse(draft);
-        
-        if (data.deletedApars) {
-            deletedApars = new Set(data.deletedApars);
-        }
-
-        if (data.aparCount) {
-            aparCount = 0; // reset
-            for (let i = 1; i <= data.aparCount; i++) {
-                if(!deletedApars.has(i)) {
-                    addApar();
-                } else {
-                    aparCount++; // Keep the index aligned
-                }
-            }
+    try {
+        if(currentDocId) {
+            await db.collection('reports').doc(currentDocId).set(data, {merge: true});
         } else {
-            addApar();
-        }
-
-        // Set all values
-        for (const key in data) {
-            const element = document.querySelector(`[name="${key}"]`);
-            if (element) {
-                if (element.type === 'radio' || element.type === 'checkbox') {
-                    const el = document.querySelector(`[name="${key}"][value="${data[key]}"]`);
-                    if(el) el.checked = true;
-                } else if (element.type !== 'file') {
-                    element.value = data[key];
-                }
-            }
+            const docRef = await db.collection('reports').add(data);
+            currentDocId = docRef.id;
         }
         
-        for(let i=1; i<=aparCount; i++) {
-            if(!deletedApars.has(i)) updateAparScore(i);
+        if(showAlert) {
+            alert(statusStr === 'final' ? 'Laporan Final berhasil disimpan!' : 'Draf berhasil disimpan dan dibackup ke server!');
+            if (statusStr === 'final') showRiwayat();
         }
-        
-        toggleSection('no-detector-cb', 'detector-checklist-container');
-        toggleSection('no-firealarm-cb', 'firealarm-checklist-container');
-        toggleSection('no-evakuasi-cb', 'evakuasi-checklist-container');
-        toggleSection('no-pintu-cb', 'pintudarurat-checklist-container');
-        toggleSection('no-tangga-cb', 'tanggadarurat-checklist-container');
-        
-        toggleAparRekomendasi();
-        togglePasifRekomendasi();
-    } else {
-        addApar();
+        return true;
+    } catch(err) {
+        console.error("Error saving report: ", err);
+        if(showAlert) alert('Gagal menyimpan ke server.');
+        return false;
     }
 }
 
+async function saveDraft() {
+    await saveToFirestore('draft', true);
+}
+
+function loadDraft() {
+    // Dipanggil hanya jika tidak ada draft (Inspeksi Baru)
+    addApar();
+}
+
 function resetForm() {
-    if(confirm('Yakin ingin mereset seluruh form? Draf juga akan dihapus.')) {
-        localStorage.removeItem('k3_inspection_draft');
+    if(confirm('Yakin ingin mereset seluruh isian form? (Jika ini Draf tersimpan, Anda tidak akan menghapusnya dari server, hanya mengosongkan layar).')) {
         document.getElementById('inspection-form').reset();
         document.getElementById('apar-container').innerHTML = '';
         aparCount = 0;
         deletedApars.clear();
-        addApar();
-        
-        toggleSection('no-detector-cb', 'detector-checklist-container');
-        toggleSection('no-firealarm-cb', 'firealarm-checklist-container');
-        toggleSection('no-evakuasi-cb', 'evakuasi-checklist-container');
-        toggleSection('no-pintu-cb', 'pintudarurat-checklist-container');
-        toggleSection('no-tangga-cb', 'tanggadarurat-checklist-container');
         
         toggleAparRekomendasi();
         togglePasifRekomendasi();
@@ -639,7 +657,7 @@ async function exportPDF() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
-    await saveReport(false);
+    await saveToFirestore('final', false);
 
     let formattedDate = '-';
     if(data.tanggal) {
@@ -858,36 +876,7 @@ async function getReports() {
 }
 
 async function saveReport(showAlert = true) {
-    const form = document.getElementById('inspection-form');
-    if(!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
-    syncQuillToInputs();
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
-    
-    for (let key in data) {
-        if (data[key] instanceof File) {
-            delete data[key];
-        }
-    }
-    
-    data.aparCount = aparCount;
-    data.deletedApars = Array.from(deletedApars);
-    data.report_id = Date.now().toString();
-    
-    try {
-        await db.collection('reports').add(data);
-        localStorage.removeItem('k3_inspection_draft');
-        if(showAlert) {
-            alert('Data berhasil disimpan permanen ke dalam Cloud Firebase!');
-            showRiwayat();
-        }
-    } catch(err) {
-        console.error("Error saving report: ", err);
-        if(showAlert) alert('Gagal menyimpan laporan ke Cloud Firebase.');
-    }
+    await saveToFirestore('final', showAlert);
 }
 
 async function saveReportAndAlert() {
@@ -915,19 +904,29 @@ async function renderRiwayat() {
     reports.sort((a, b) => b.report_id - a.report_id);
     
     reports.forEach(report => {
+        const isDraft = report.status === 'draft';
+        const missing = isDraft ? getMissingFields(report) : [];
+        const missingText = missing.length > 0 ? `<p class="text-xs font-bold text-red-500 mt-2"><i class="fa-solid fa-triangle-exclamation"></i> Belum diisi: ${missing.join(', ')}</p>` : '';
+        
         const div = document.createElement('div');
-        div.className = "bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition";
+        div.className = "bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition relative";
+        if (isDraft) {
+            div.classList.add('border-orange-300', 'bg-orange-50/30');
+        }
+        
         div.innerHTML = `
+            ${isDraft ? '<div class="absolute top-0 right-0 bg-orange-100 text-orange-600 text-xs font-black px-3 py-1 rounded-bl-xl rounded-tr-xl">DRAF</div>' : ''}
             <div class="flex justify-between items-start mb-4">
-                <div class="bg-orange-50 text-orange-600 p-2 rounded-lg">
-                    <i class="fa-solid fa-file-contract"></i>
+                <div class="${isDraft ? 'bg-orange-100' : 'bg-green-50 text-green-600'} text-orange-600 p-2 rounded-lg">
+                    <i class="fa-solid ${isDraft ? 'fa-file-pen' : 'fa-file-contract'}"></i>
                 </div>
-                <span class="text-xs font-bold text-gray-400">${new Date(parseInt(report.report_id)).toLocaleDateString('id-ID')}</span>
+                <span class="text-xs font-bold text-gray-400 mt-1 mr-8">${new Date(parseInt(report.report_id)).toLocaleDateString('id-ID')}</span>
             </div>
             <h3 class="font-bold text-dark text-lg mb-1 line-clamp-1">${report.fakultas || 'Tanpa Fakultas'}</h3>
-            <p class="text-sm text-gray-500 mb-4">${report.lokasi || '-'}</p>
+            <p class="text-sm text-gray-500 mb-2">${report.lokasi || '-'}</p>
+            ${missingText}
             
-            <div class="pt-4 border-t border-gray-100 flex gap-2">
+            <div class="pt-4 mt-4 border-t border-gray-100 flex gap-2">
                 <button onclick="loadReport('${report.id}')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-dark py-2 rounded-lg text-sm font-bold transition">
                     Buka Data
                 </button>
@@ -946,15 +945,57 @@ async function loadReport(id) {
     const reports = await getReports();
     const data = reports.find(r => r.id === id);
     if(data) {
-        localStorage.setItem('k3_inspection_draft', JSON.stringify(data));
+        currentDocId = id;
         
-        startInspection();
+        document.getElementById('dashboard-view').classList.add('hidden');
+        document.getElementById('riwayat-view').classList.add('hidden');
+        document.getElementById('statistik-view').classList.add('hidden');
+        document.getElementById('form-view').classList.remove('hidden');
+        window.scrollTo(0, 0);
         
         document.getElementById('apar-container').innerHTML = '';
         aparCount = 0;
         deletedApars.clear();
         
-        loadDraft();
+        if (data.deletedApars) deletedApars = new Set(data.deletedApars);
+        if (data.aparCount) {
+            for (let i = 1; i <= data.aparCount; i++) {
+                if(!deletedApars.has(i)) addApar();
+                else aparCount++;
+            }
+        } else {
+            addApar();
+        }
+
+        // Set all values
+        for (const key in data) {
+            const element = document.querySelector(`[name="${key}"]`);
+            if (element) {
+                if (element.type === 'radio' || element.type === 'checkbox') {
+                    const el = document.querySelector(`[name="${key}"][value="${data[key]}"]`);
+                    if(el) el.checked = true;
+                } else if (element.type !== 'file') {
+                    element.value = data[key];
+                }
+            }
+            
+            // Set Quill content
+            if (key.startsWith('kesimpulan_') || key.startsWith('rekomendasi_')) {
+                if (window.quillEditors && window.quillEditors[key]) {
+                    window.quillEditors[key].root.innerHTML = data[key];
+                }
+            }
+        }
+        
+        for(let i=1; i<=aparCount; i++) {
+            if(!deletedApars.has(i)) updateAparScore(i);
+        }
+        
+        toggleSection('no-detector-cb', 'detector-checklist-container');
+        toggleSection('no-firealarm-cb', 'firealarm-checklist-container');
+        toggleSection('no-evakuasi-cb', 'evakuasi-checklist-container');
+        toggleSection('no-pintu-cb', 'pintudarurat-checklist-container');
+        toggleSection('no-tangga-cb', 'tanggadarurat-checklist-container');
     }
 }
 

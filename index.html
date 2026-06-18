@@ -97,7 +97,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer flex gap-4 items-start" onclick="startInspection()">
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer flex gap-4 items-start" onclick="startNewInspection()">
                         <div class="bg-green-50 text-primary p-3 rounded-xl shrink-0">
                             <i class="fa-solid fa-clipboard-check text-xl"></i>
                         </div>
@@ -138,6 +138,15 @@
                                 </div>
                                 <div class="bg-gray-50 w-12 h-12 rounded-full flex items-center justify-center text-gray-400">
                                     <i class="fa-solid fa-file-lines text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 font-bold mb-1">Draf Berjalan</p>
+                                    <h4 class="text-3xl font-black text-orange-500" id="dash-tot-draf">0</h4>
+                                </div>
+                                <div class="bg-orange-50 w-12 h-12 rounded-full flex items-center justify-center text-orange-400">
+                                    <i class="fa-solid fa-clock text-xl"></i>
                                 </div>
                             </div>
                             <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
