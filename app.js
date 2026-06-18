@@ -463,18 +463,18 @@ function addApar() {
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Kapasitas (Kg)</label>
-                <input type="number" name="apar_${aparCount}_kapasitas" class="w-full px-4 py-2 border-gray-300 rounded-xl focus:border-primary focus:ring-primary transition">
+                <input type="number" step="any" name="apar_${aparCount}_kapasitas" class="w-full px-4 py-2 border-gray-300 rounded-xl focus:border-primary focus:ring-primary transition">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center justify-between">
-                    <span>Tgl Produksi</span>
+                    <span>Tgl Produksi (mm/yyyy)</span>
                     <span class="font-normal normal-case opacity-75">(Opsional)</span>
                 </label>
-                <input type="date" name="apar_${aparCount}_produksi" class="w-full px-4 py-2 border-gray-300 rounded-xl focus:border-primary focus:ring-primary transition">
+                <input type="month" name="apar_${aparCount}_produksi" class="w-full px-4 py-2 border-gray-300 rounded-xl focus:border-primary focus:ring-primary transition">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center justify-between">
-                    <span>Tgl Kadaluarsa</span>
+                    <span>Tgl Kadaluarsa <span class="font-normal normal-case opacity-75">(dd/mm/yyyy)</span></span>
                     <span class="font-normal normal-case opacity-75">(Opsional)</span>
                 </label>
                 <input type="date" name="apar_${aparCount}_kadaluarsa" class="w-full px-4 py-2 border-gray-300 rounded-xl focus:border-primary focus:ring-primary transition">
@@ -689,6 +689,7 @@ async function exportPDF() {
         if(!d) return 'N/A';
         const pts = d.split('-');
         if(pts.length === 3) return `${pts[2]}/${pts[1]}/${pts[0]}`;
+        if(pts.length === 2) return `${pts[1]}/${pts[0]}`;
         return d;
     };
 
