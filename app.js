@@ -957,8 +957,11 @@ function getReportHTML(data) {
     <div style="font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #000; line-height: 1.5;">`;
 
     // 1. APAR
-    for(let i=1; i<=aparCount; i++) {
-        if(deletedApars.has(i)) continue;
+    const localAparCount = data.aparCount || 0;
+    const localDeletedApars = data.deletedApars ? new Set(data.deletedApars) : new Set();
+
+    for(let i=1; i<=localAparCount; i++) {
+        if(localDeletedApars.has(i)) continue;
         
         let sesuaiCount = 0;
         let totalCount = 0;
@@ -1188,8 +1191,13 @@ function applyRiwayatFilter() {
     const filterValue = document.getElementById('filter-fakultas') ? document.getElementById('filter-fakultas').value : '';
     
     let reports = [...riwayatReportsCache];
+    const btnDownloadAll = document.getElementById('btn-download-all');
+    
     if (filterValue) {
         reports = reports.filter(r => r.fakultas === filterValue);
+        if (btnDownloadAll) btnDownloadAll.classList.remove('hidden');
+    } else {
+        if (btnDownloadAll) btnDownloadAll.classList.add('hidden');
     }
     
     container.innerHTML = '';
@@ -1531,4 +1539,113 @@ ATURAN WAJIB:
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
+}
+
+async function downloadAllByFakultas() {
+    const filterValue = document.getElementById('filter-fakultas').value;
+    if (!filterValue) {
+        alert("Pilih salah satu fakultas terlebih dahulu!");
+        return;
+    }
+    
+    const btn = document.getElementById('btn-download-all');
+    const originalBtn = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyiapkan...';
+    btn.disabled = true;
+    
+    // Ambil data yang difilter dan urutkan
+    let reports = riwayatReportsCache.filter(r => r.fakultas === filterValue);
+    reports.sort((a, b) => b.report_id - a.report_id);
+    
+    if (reports.length === 0) {
+        alert("Tidak ada data untuk fakultas ini.");
+        btn.innerHTML = originalBtn;
+        btn.disabled = false;
+        return;
+    }
+
+    let combinedHTML = '';
+    
+    for (let i = 0; i < reports.length; i++) {
+        const data = reports[i];
+        let reportHTML = getReportHTML(data);
+        
+        combinedHTML += reportHTML;
+        
+        // Tambahkan page break setelah tiap laporan, kecuali laporan terakhir
+        if (i < reports.length - 1) {
+            combinedHTML += '<div style="page-break-after: always; display: block; height: 0;"></div>';
+        }
+    }
+    
+    let printContainer = document.getElementById('print-container');
+    if (!printContainer) {
+        printContainer = document.createElement('div');
+        printContainer.id = 'print-container';
+        document.body.appendChild(printContainer);
+    }
+    
+    printContainer.innerHTML = `
+        <style>
+            .ql-align-center { text-align: center; }
+            .ql-align-right { text-align: right; }
+            .ql-align-justify { text-align: justify; }
+            ol { list-style-type: decimal; padding-left: 20px; }
+            ul { list-style-type: disc; padding-left: 20px; }
+            li { margin-bottom: 5px; }
+            img { max-width: 100%; height: auto; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        </style>
+        ${combinedHTML}
+    `;
+    
+    let printStyle = document.getElementById('print-style-global');
+    if (!printStyle) {
+        printStyle = document.createElement('style');
+        printStyle.id = 'print-style-global';
+        printStyle.innerHTML = `
+            #print-container {
+                display: none;
+            }
+            @media print {
+                body > *:not(#print-container) {
+                    display: none !important;
+                }
+                #print-container {
+                    display: block !important;
+                    width: 100%;
+                    background: white;
+                    color: black;
+                    margin: 0;
+                    padding: 0;
+                }
+                @page {
+                    size: A4 portrait;
+                    margin: 15mm;
+                }
+            }
+        `;
+        document.head.appendChild(printStyle);
+    }
+    
+    const originalTitle = document.title;
+    document.title = `Rekap_Inspeksi_${filterValue.replace(/\s+/g, '_')}_Total_${reports.length}`;
+    
+    const images = printContainer.getElementsByTagName('img');
+    const imagePromises = Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+        });
+    });
+    
+    await Promise.all(imagePromises);
+    
+    setTimeout(() => {
+        window.print();
+        document.title = originalTitle;
+        btn.innerHTML = originalBtn;
+        btn.disabled = false;
+    }, 500);
 }
