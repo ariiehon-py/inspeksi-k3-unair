@@ -1486,24 +1486,43 @@ ATURAN WAJIB:
             sysPrompt += `Buat ${type} secara to the point. Jangan terlalu panjang, fokus pada fakta di lapangan. Ingat, jangan ada basa-basi, salam, atau kata pengantar. Langsung berikan poin-poinnya.`;
         }
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: sysPrompt + "\n\n" + dataContext }] }]
-            })
-        });
-        
-        const resJson = await response.json();
-        if (resJson.error) {
-            throw new Error(resJson.error.message);
+        const modelsToTry = ['gemini-3.5-flash', 'gemini-3-flash-preview'];
+        let success = false;
+        let lastError = null;
+
+        for (const model of modelsToTry) {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: sysPrompt + "\n\n" + dataContext }] }]
+                    })
+                });
+                
+                const resJson = await response.json();
+                if (resJson.error) {
+                    throw new Error(resJson.error.message);
+                }
+                
+                let text = resJson.candidates[0].content.parts[0].text;
+                text = text.replace(/```html/gi, '').replace(/```/g, '').trim();
+                
+                if (window.quillEditors && window.quillEditors[`${type}_${section}`]) {
+                    window.quillEditors[`${type}_${section}`].root.innerHTML = text;
+                }
+                
+                success = true;
+                break; // Berhasil, hentikan loop
+            } catch (e) {
+                lastError = e;
+                console.warn(`Model ${model} gagal:`, e.message);
+                // Lanjut ke model berikutnya
+            }
         }
-        
-        let text = resJson.candidates[0].content.parts[0].text;
-        text = text.replace(/```html/gi, '').replace(/```/g, '').trim();
-        
-        if (window.quillEditors && window.quillEditors[`${type}_${section}`]) {
-            window.quillEditors[`${type}_${section}`].root.innerHTML = text;
+
+        if (!success) {
+            throw lastError;
         }
     } catch(err) {
         console.error(err);
