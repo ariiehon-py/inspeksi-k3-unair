@@ -432,17 +432,17 @@ function generateChecklistHTML(items, prefix) {
             <div class="flex flex-wrap items-center gap-4 w-full lg:w-2/3">
                 <div class="flex items-center gap-5 shrink-0">
                     <label class="inline-flex items-center cursor-pointer group">
-                        <input type="radio" name="${prefix}_${index}_status" value="Sesuai" class="w-5 h-5 border-gray-300 text-primary focus:ring-primary">
+                        <input type="radio" name="${prefix}_${index}_status" value="Sesuai" class="w-5 h-5 border-gray-300 text-primary focus:ring-primary" onchange="autoFillKeterangan(this, \`${item}\`)">
                         <span class="ml-2 text-sm text-gray-700 group-hover:text-dark transition">Sesuai</span>
                     </label>
                     <label class="inline-flex items-center cursor-pointer group">
-                        <input type="radio" name="${prefix}_${index}_status" value="Tidak Sesuai" class="w-5 h-5 border-gray-300 text-red-600 focus:ring-red-600">
+                        <input type="radio" name="${prefix}_${index}_status" value="Tidak Sesuai" class="w-5 h-5 border-gray-300 text-red-600 focus:ring-red-600" onchange="autoFillKeterangan(this, \`${item}\`)">
                         <span class="ml-2 text-sm text-gray-700 group-hover:text-dark transition">Tidak Sesuai</span>
                     </label>
                 </div>
 
                 <div class="flex-1 min-w-[150px]">
-                    <input type="text" name="${prefix}_${index}_keterangan" placeholder="Keterangan..." class="w-full px-4 py-2 text-sm border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:border-primary focus:ring-primary transition shadow-sm">
+                    <input type="text" name="${prefix}_${index}_keterangan" oninput="this.removeAttribute('data-auto')" placeholder="Keterangan..." class="w-full px-4 py-2 text-sm border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:border-primary focus:ring-primary transition shadow-sm">
                 </div>
 
                 <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
@@ -453,6 +453,61 @@ function generateChecklistHTML(items, prefix) {
         </div>`;
     });
     return html;
+}
+
+function autoFillKeterangan(radio, itemText) {
+    const status = radio.value;
+    const ketName = radio.name.replace('_status', '_keterangan');
+    const ketInput = document.querySelector(`input[name="${ketName}"]`);
+    
+    if (ketInput && (!ketInput.value || ketInput.dataset.auto === "true")) {
+        ketInput.value = generateKeterangan(itemText, status);
+        ketInput.dataset.auto = "true";
+    }
+}
+
+function generateKeterangan(text, status) {
+    let t = text.toLowerCase().trim();
+    
+    if (status === 'Sesuai') {
+        if (t.includes("mudah dilihat dan jelas")) return "Kondisi dapat terlihat dengan mudah dan jelas tanpa halangan.";
+        if (t.includes("terdapat tanda lokasi")) return "Tanda lokasi terpasang dengan baik dan terlihat jelas.";
+        if (t.includes("tinggi pemasangan")) return "Tinggi pemasangan sudah sesuai dengan standar (50 cm - 125 cm).";
+        if (t.includes("kondisi fisik tabung")) return "Kondisi fisik tabung dalam keadaan baik, tidak berkarat atau penyok.";
+        if (t.includes("pin pengaman")) return "Pin pengaman terpasang dengan baik dan tidak rusak.";
+        if (t.includes("label jenis dan petunjuk")) return "Label jenis dan petunjuk penggunaan terbaca dengan jelas.";
+        if (t.includes("tanggal kadaluarsa terbaca")) return "Tanggal kadaluarsa terbaca jelas dan belum melewati batas waktu.";
+        if (t.includes("manometer normal")) return "Manometer menunjuk pada zona hijau (tekanan normal).";
+        if (t.includes("nozzle pada kondisi normal")) return "Nozzle dalam kondisi bersih, tidak tersumbat, dan tidak rusak.";
+        if (t.includes("hose (selang) pada kondisi normal")) return "Selang (hose) dalam kondisi baik, tidak retak atau bocor.";
+        if (t.includes("kartu inspeksi tersedia")) return "Kartu inspeksi tersedia di lokasi dan telah diisi secara berkala.";
+        if (t.includes("terdapat kerusakan fisik")) return "Terpasang dengan baik dan tidak terdapat kerusakan fisik.";
+        if (t.includes("tidak tertutup debu")) return "Kondisi bersih, tidak tertutup oleh debu maupun cat.";
+        if (t.includes("berfungsi saat diuji")) return "Berfungsi dengan normal saat dilakukan pengujian.";
+        if (t.includes("berbunyi saat pengujian")) return "Dapat berbunyi keras dan normal saat dilakukan pengujian.";
+        if (t.includes("berfungsi normal") || t.includes("berfungsi dengan baik") || t.includes("berfungsi") || t.includes("menyala")) return "Berfungsi dengan normal dan baik.";
+        if (t.includes("tersedia") || t.includes("terpasang") || t.includes("jelas")) return "Kondisi memadai dan terpasang dengan jelas sesuai standar.";
+        return `Kondisi ${t} sudah sesuai dengan standar operasional.`;
+    } else {
+        if (t.includes("mudah dilihat dan jelas")) return "Kondisi terhalang atau tidak dapat terlihat dengan jelas.";
+        if (t.includes("terdapat tanda lokasi")) return "Tidak terdapat tanda lokasi yang memadai.";
+        if (t.includes("tinggi pemasangan")) return "Tinggi pemasangan tidak sesuai standar (terlalu rendah/tinggi).";
+        if (t.includes("kondisi fisik tabung")) return "Terdapat kerusakan fisik pada tabung (karat/penyok/bocor).";
+        if (t.includes("pin pengaman")) return "Pin pengaman hilang atau mengalami kerusakan.";
+        if (t.includes("label jenis dan petunjuk")) return "Label jenis atau petunjuk penggunaan pudar/hilang/tidak jelas.";
+        if (t.includes("tanggal kadaluarsa terbaca")) return "Tanggal kadaluarsa sudah terlewat atau tidak dapat terbaca.";
+        if (t.includes("manometer normal")) return "Tekanan tidak normal (manometer tidak menunjuk ke zona hijau).";
+        if (t.includes("nozzle pada kondisi normal")) return "Nozzle kotor, tersumbat, atau mengalami kerusakan.";
+        if (t.includes("hose (selang) pada kondisi normal")) return "Selang (hose) retak, bocor, atau mengalami kerusakan.";
+        if (t.includes("kartu inspeksi tersedia")) return "Kartu inspeksi tidak tersedia atau tidak diisi secara rutin.";
+        if (t.includes("terdapat kerusakan fisik")) return "Terdapat indikasi kerusakan fisik pada unit.";
+        if (t.includes("tidak tertutup debu")) return "Kondisi unit kotor, tertutup debu, atau terkena cipratan cat.";
+        if (t.includes("berfungsi saat diuji")) return "Tidak berfungsi atau tidak merespon saat dilakukan pengujian.";
+        if (t.includes("berbunyi saat pengujian")) return "Tidak mengeluarkan bunyi saat dilakukan pengujian.";
+        if (t.includes("berfungsi normal") || t.includes("berfungsi dengan baik") || t.includes("berfungsi") || t.includes("menyala")) return "Ditemukan malfungsi atau tidak berfungsi dengan semestinya.";
+        if (t.includes("tersedia") || t.includes("terpasang") || t.includes("jelas")) return "Kondisi tidak memadai, tidak terpasang, atau tidak terbaca jelas.";
+        return `Kondisi ${t} ditemukan belum sesuai atau bermasalah.`;
+    }
 }
 
 function addApar() {
@@ -473,17 +528,17 @@ function addApar() {
             <div class="flex flex-wrap items-center gap-4 w-full lg:w-2/3">
                 <div class="flex items-center gap-5 shrink-0">
                     <label class="inline-flex items-center cursor-pointer group">
-                        <input type="radio" name="apar_${aparCount}_item_${index}_status" value="Sesuai" class="w-5 h-5 border-gray-300 text-primary focus:ring-primary" onchange="updateAparScore(${aparCount})">
+                        <input type="radio" name="apar_${aparCount}_item_${index}_status" value="Sesuai" class="w-5 h-5 border-gray-300 text-primary focus:ring-primary" onchange="updateAparScore(${aparCount}); autoFillKeterangan(this, \`${item}\`)">
                         <span class="ml-2 text-sm text-gray-700 group-hover:text-dark transition">Sesuai</span>
                     </label>
                     <label class="inline-flex items-center cursor-pointer group">
-                        <input type="radio" name="apar_${aparCount}_item_${index}_status" value="Tidak Sesuai" class="w-5 h-5 border-gray-300 text-red-600 focus:ring-red-600" onchange="updateAparScore(${aparCount})">
+                        <input type="radio" name="apar_${aparCount}_item_${index}_status" value="Tidak Sesuai" class="w-5 h-5 border-gray-300 text-red-600 focus:ring-red-600" onchange="updateAparScore(${aparCount}); autoFillKeterangan(this, \`${item}\`)">
                         <span class="ml-2 text-sm text-gray-700 group-hover:text-dark transition">Tidak Sesuai</span>
                     </label>
                 </div>
 
                 <div class="flex-1 min-w-[150px]">
-                    <input type="text" name="apar_${aparCount}_item_${index}_keterangan" placeholder="Keterangan..." class="w-full px-4 py-2 text-sm border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:border-primary focus:ring-primary transition shadow-sm">
+                    <input type="text" name="apar_${aparCount}_item_${index}_keterangan" oninput="this.removeAttribute('data-auto')" placeholder="Keterangan..." class="w-full px-4 py-2 text-sm border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:border-primary focus:ring-primary transition shadow-sm">
                 </div>
 
                 <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
