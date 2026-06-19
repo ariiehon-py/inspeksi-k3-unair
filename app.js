@@ -1448,9 +1448,14 @@ async function generateWithGemini(section, type) {
             dataContext += items.join('\n');
         }
 
-        let sysPrompt = `Anda adalah seorang ahli K3 profesional. Berdasarkan Data Inspeksi yang diberikan, buatkan ${type} inspeksi ${section.toUpperCase()} dalam bahasa Indonesia yang baku, profesional, dan to the point.
+        let sysPrompt = `Anda adalah seorang ahli K3. Tugas Anda HANYA membuat ${type.toUpperCase()} untuk inspeksi ${section.toUpperCase()} berdasarkan Data Inspeksi. 
 
-Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar kompatibel dengan rich text editor. JANGAN gunakan tag markdown (\`\`\`html) dalam respons Anda. Langsung keluarkan HTML murninya.
+ATURAN WAJIB:
+1. JANGAN memberikan kata pembuka atau penutup (seperti "Berikut adalah kesimpulan...", "Berdasarkan hasil..."). Langsung ke intinya (To The Point).
+2. JIKA Anda diminta membuat KESIMPULAN, jangan tulis rekomendasi. JIKA diminta REKOMENDASI, jangan tulis kesimpulan.
+3. SANGAT PENTING: Perhatikan status tiap item secara akurat. Jika statusnya "Tidak Ada" atau "Tidak Sesuai", tuliskan faktanya secara jujur, jangan menganggap kondisinya baik.
+4. Gunakan bahasa Indonesia baku, formal, dan rapi.
+5. Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar kompatibel dengan rich text editor. JANGAN gunakan tag markdown (\`\`\`html). Langsung keluarkan HTML murninya.
 
 `;
 
@@ -1478,7 +1483,7 @@ Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar 
 </ul>`;
             }
         } else {
-            sysPrompt += `Buat kesimpulan/rekomendasi yang terstruktur dan analitis. Jangan terlalu panjang, fokus pada poin-poin krusial yang perlu diperbaiki (jika ada yang Tidak Sesuai). Jika semuanya Sesuai, berikan apresiasi dan sarankan pemeliharaan berkelanjutan.`;
+            sysPrompt += `Buat ${type} secara to the point. Jangan terlalu panjang, fokus pada fakta di lapangan. Ingat, jangan ada basa-basi, salam, atau kata pengantar. Langsung berikan poin-poinnya.`;
         }
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
