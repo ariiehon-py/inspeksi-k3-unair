@@ -385,7 +385,7 @@ function generateChecklistHTML(items, prefix) {
                 </div>
 
                 <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
-                    <input type="file" name="${prefix}_${index}_foto" accept="image/*" capture="environment" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreview(this, '${prefix}_${index}_preview')">
+                    <input type="file" name="${prefix}_${index}_foto" accept="image/*" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreview(this, '${prefix}_${index}_preview')">
                     <img id="${prefix}_${index}_preview" class="hidden w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm" />
                 </div>
             </div>
@@ -426,7 +426,7 @@ function addApar() {
                 </div>
 
                 <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
-                    <input type="file" name="apar_${aparCount}_item_${index}_foto" accept="image/*" capture="environment" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreview(this, 'apar_${aparCount}_item_${index}_preview')">
+                    <input type="file" name="apar_${aparCount}_item_${index}_foto" accept="image/*" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreview(this, 'apar_${aparCount}_item_${index}_preview')">
                     <img id="apar_${aparCount}_item_${index}_preview" class="hidden w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm" />
                 </div>
             </div>
