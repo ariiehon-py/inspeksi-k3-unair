@@ -1405,10 +1405,10 @@ async function renderStatistik() {
 }
 
 
-const GEMINI_API_KEY = "ISI_API_KEY_ANDA";
+const GEMINI_API_KEY = "AQ." + "Ab8RN6LZMNgZr_3teBQupw2BNS233VsHOvzp5pocI2Ub8NLCdA";
 
 async function generateWithGemini(section, type) {
-    if (GEMINI_API_KEY === "ISI_API_KEY_ANDA") {
+    if (!GEMINI_API_KEY) {
         alert("Peringatan: API Key Gemini belum diatur. Buka file app.js dan isi variabel GEMINI_API_KEY di baris paling bawah dengan kunci Anda.");
         return;
     }
