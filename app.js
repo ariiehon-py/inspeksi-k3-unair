@@ -902,6 +902,7 @@ function getReportHTML(data) {
     buildPassiveSection('tanggadarurat', 'TANGGA DARURAT', 'Indikator pemeriksaan tangga darurat dapat disusun berdasarkan Permen PU No. 26/PRT/M/2008 tentang Persyaratan Teknis Sistem Proteksi Kebakaran pada Bangunan Gedung dan Lingkungan serta SNI 03-1746-2000 tentang Sarana Jalan Keluar.', checklists.tanggadarurat, false);
 
     html += `</div>`;
+    return html;
 }
 
 // ----------------- HISTORY & STATS LOGIC -----------------
