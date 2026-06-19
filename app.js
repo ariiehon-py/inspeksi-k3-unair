@@ -1076,6 +1076,8 @@ async function saveReportAndAlert() {
     await saveReport(true);
 }
 
+let riwayatReportsCache = [];
+
 async function renderRiwayat() {
     const container = document.getElementById('riwayat-container');
     const emptyState = document.getElementById('riwayat-empty');
@@ -1084,7 +1086,38 @@ async function renderRiwayat() {
     emptyState.classList.add('hidden');
     container.classList.remove('hidden');
 
-    const reports = await getReports();
+    riwayatReportsCache = await getReports();
+    
+    const select = document.getElementById('filter-fakultas');
+    if (select) {
+        const currentVal = select.value;
+        const fakSet = new Set();
+        riwayatReportsCache.forEach(r => {
+            if (r.fakultas) fakSet.add(r.fakultas);
+        });
+        select.innerHTML = '<option value="">Semua Fakultas</option>';
+        Array.from(fakSet).sort().forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = f;
+            opt.innerText = f;
+            select.appendChild(opt);
+        });
+        select.value = currentVal;
+    }
+    
+    applyRiwayatFilter();
+}
+
+function applyRiwayatFilter() {
+    const container = document.getElementById('riwayat-container');
+    const emptyState = document.getElementById('riwayat-empty');
+    const filterValue = document.getElementById('filter-fakultas') ? document.getElementById('filter-fakultas').value : '';
+    
+    let reports = [...riwayatReportsCache];
+    if (filterValue) {
+        reports = reports.filter(r => r.fakultas === filterValue);
+    }
+    
     container.innerHTML = '';
     
     if(reports.length === 0) {
@@ -1092,6 +1125,9 @@ async function renderRiwayat() {
         emptyState.classList.remove('hidden');
         return;
     }
+    
+    container.classList.remove('hidden');
+    emptyState.classList.add('hidden');
     
     // Sort descending by id (timestamp)
     reports.sort((a, b) => b.report_id - a.report_id);
