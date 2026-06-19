@@ -839,8 +839,12 @@ async function exportPDF() {
 
     html += `</div>`;
 
-    const finalHtml = html + `
-    <style>
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    
+    // Tweak Quill styling inside PDF so it renders lists properly
+    const style = document.createElement('style');
+    style.innerHTML = `
         .ql-align-center { text-align: center; }
         .ql-align-right { text-align: right; }
         .ql-align-justify { text-align: justify; }
@@ -848,22 +852,36 @@ async function exportPDF() {
         ul { list-style-type: disc; padding-left: 20px; }
         li { margin-bottom: 5px; }
         img { max-width: 100%; height: auto; }
-    </style>`;
+    `;
+    container.appendChild(style);
+
+    // Kunci utama agar html2canvas tidak merender blank:
+    // Beri dimensi yang fix, warna background yang jelas, dan pasang di DOM.
+    container.style.width = '800px';
+    container.style.backgroundColor = '#ffffff';
+    container.style.position = 'absolute';
+    container.style.left = '0';
+    container.style.top = '0';
+    container.style.zIndex = '-9999';
+    document.body.appendChild(container);
 
     const opt = {
       margin:       15,
       filename:     `Laporan_Inspeksi_K3_${data.fakultas ? data.fakultas : 'Draf'}_${data.tanggal || 'Date'}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
+      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 800 },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
-        await html2pdf().set(opt).from(finalHtml).save();
+        await html2pdf().set(opt).from(container).save();
     } catch(err) {
         console.error(err);
         alert('Gagal membuat PDF.');
     } finally {
+        if (container.parentNode) {
+            container.parentNode.removeChild(container);
+        }
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
