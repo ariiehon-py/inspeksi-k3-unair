@@ -90,17 +90,35 @@ const checklists = {
 let aparCount = 0;
 let deletedApars = new Set();
 
+const surveyorMap = {
+    'neffrety': 'Dr. Neffrety Nilamsari, S.Sos., M.Kes.',
+    'herman': 'Herman Bagus Dwicahyo, S.KM., M.KKK.',
+    'yunita': 'Yunita Putri Linggarwati, S.KM.',
+    'hasan': 'Hasan Sholeh',
+    'natasya': 'Natasya Anggraheni Putri',
+    'nabila': 'Nabila Eka Agustin',
+    'sahda': 'Sahda Regita Cahyani',
+    'daninda': 'Daninda Aisya Putri',
+    'suryan': 'Suryan Nur Madjid',
+    'sam': 'Sam Ramdhani Purnama',
+    'rafa': 'Maulana Rafa Ajie Zafira',
+    'faizah': 'Faizah Nur Rahmannia',
+    'nadha': 'Ngakan Komang Nadha Santika'
+};
+
 // View Management
 function login(e) {
     e.preventDefault();
-    const user = document.getElementById('username').value;
+    const user = document.getElementById('username').value.toLowerCase().trim();
     const pass = document.getElementById('password').value;
     
-    if(user === 'admin' && pass === 'admin') {
+    if(surveyorMap[user] && pass === 'k3unair') {
         localStorage.setItem('k3_logged_in', 'true');
+        localStorage.setItem('k3_user_id', user);
+        localStorage.setItem('k3_user_name', surveyorMap[user]);
         showDashboard();
     } else {
-        alert('Username atau password salah! Gunakan admin / admin');
+        alert('Username atau password salah! Username = nama panggilan huruf kecil, Password = k3unair');
     }
 }
 
@@ -127,6 +145,10 @@ function showLogin() {
 let currentDocId = null;
 
 function showDashboard() {
+    const userName = localStorage.getItem('k3_user_name') || 'Surveyor';
+    const welcomeText = document.getElementById('welcome-text');
+    if (welcomeText) welcomeText.innerText = `Hi, ${userName}!`;
+
     document.getElementById('login-view').classList.add('hidden');
     document.getElementById('app-view').classList.remove('hidden');
     document.getElementById('dashboard-view').classList.remove('hidden');
@@ -144,6 +166,10 @@ function startNewInspection() {
     aparCount = 0;
     deletedApars.clear();
     
+    const userName = localStorage.getItem('k3_user_name') || '';
+    document.getElementById('input-surveyor').value = userName;
+    renderSurveyorChips();
+    
     // Clear Quill editors
     if (window.quillEditors) {
         for (let key in window.quillEditors) {
@@ -153,6 +179,36 @@ function startNewInspection() {
     
     addApar();
     startInspection();
+}
+
+function renderSurveyorChips() {
+    const container = document.getElementById('chip-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const input = document.getElementById('input-surveyor');
+    const currentUser = localStorage.getItem('k3_user_name') || '';
+    
+    Object.values(surveyorMap).forEach(name => {
+        if (name === currentUser) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-full text-xs font-semibold text-gray-700 transition cursor-pointer';
+        btn.innerText = '+ ' + name;
+        btn.onclick = () => {
+            let currentVal = input.value.trim();
+            if (currentVal && !currentVal.includes(name)) {
+                input.value = currentVal + ', ' + name;
+                btn.classList.add('bg-green-100', 'border-green-300', 'text-green-800');
+                btn.innerText = '✓ ' + name;
+            } else if (!currentVal) {
+                input.value = name;
+                btn.classList.add('bg-green-100', 'border-green-300', 'text-green-800');
+                btn.innerText = '✓ ' + name;
+            }
+        };
+        container.appendChild(btn);
+    });
 }
 
 function getMissingFields(data) {
@@ -1142,6 +1198,8 @@ async function loadReport(id) {
         toggleSection('no-evakuasi-cb', 'evakuasi-checklist-container');
         toggleSection('no-pintu-cb', 'pintudarurat-checklist-container');
         toggleSection('no-tangga-cb', 'tanggadarurat-checklist-container');
+        
+        renderSurveyorChips();
     }
 }
 
