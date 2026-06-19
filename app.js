@@ -674,6 +674,70 @@ async function exportPDF() {
 
     await saveToFirestore('final', false);
 
+    const html = getReportHTML(data);
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .ql-align-center { text-align: center; }
+        .ql-align-right { text-align: right; }
+        .ql-align-justify { text-align: justify; }
+        ol { list-style-type: decimal; padding-left: 20px; }
+        ul { list-style-type: disc; padding-left: 20px; }
+        li { margin-bottom: 5px; }
+        img { max-width: 100%; height: auto; }
+    `;
+    container.appendChild(style);
+
+    container.style.width = '800px';
+    container.style.backgroundColor = '#ffffff';
+    container.style.position = 'absolute';
+    container.style.left = '0';
+    container.style.top = '0';
+    container.style.zIndex = '-9999';
+    document.body.appendChild(container);
+
+    const opt = {
+      margin:       15,
+      filename:     `Laporan_Inspeksi_K3_${data.fakultas ? data.fakultas : 'Draf'}_${data.tanggal || 'Date'}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 1, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: 'css', avoid: 'tr' }
+    };
+
+    try {
+        await html2pdf().set(opt).from(container).save();
+    } catch(err) {
+        console.error(err);
+        alert('Gagal membuat PDF.');
+    } finally {
+        if (container.parentNode) {
+            container.parentNode.removeChild(container);
+        }
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+function previewReport() {
+    const form = document.getElementById('inspection-form');
+    syncQuillToInputs();
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    const html = getReportHTML(data);
+    
+    document.getElementById('preview-paper').innerHTML = html;
+    document.getElementById('preview-modal').classList.remove('hidden');
+}
+
+function downloadFromPreview() {
+    document.getElementById('preview-modal').classList.add('hidden');
+    exportPDF();
+}
+
+function getReportHTML(data) {
     let formattedDate = '-';
     if(data.tanggal) {
         const parts = data.tanggal.split('-');
@@ -721,7 +785,7 @@ async function exportPDF() {
         const pct = totalCount > 0 ? ((sesuaiCount/totalCount)*100).toFixed(1) + '%' : '0%';
 
         html += `
-        <div style="page-break-after: always;">
+        <div style="page-break-after: always; margin-bottom: 30px;">
             <table style="width:100%; border-collapse: collapse; margin-bottom: 20px;" border="1">
                 <tr><td colspan="2" style="padding: 8px; text-align: center; font-weight: bold;">FORM HASIL INSPEKSI APAR</td></tr>
                 <tr><td style="padding: 8px; width: 30%;"><b>Lokasi</b></td><td style="padding: 8px;">${data.lokasi || '-'}</td></tr>
@@ -756,7 +820,7 @@ async function exportPDF() {
 
     // Add global APAR conclusion if exists
     if(data.kesimpulan_apar || data.rekomendasi_apar) {
-        html += `<div style="page-break-after: always; padding-top: 20px;">`;
+        html += `<div style="page-break-after: always; padding-top: 20px; margin-bottom: 30px;">`;
         if(data.kesimpulan_apar) {
             html += `<p style="font-weight:bold; margin-bottom:10px;">Kesimpulan hasil Inspeksi APAR:</p><div style="margin-bottom:20px; padding-left:20px;">${data.kesimpulan_apar}</div>`;
         }
@@ -770,7 +834,7 @@ async function exportPDF() {
     const buildPassiveSection = (prefix, title, desc, list, hasHeaderTable) => {
         if(data[`no_${prefix}`] === '1') return;
 
-        html += `<div style="page-break-after: always;">`;
+        html += `<div style="page-break-after: always; margin-bottom: 30px;">`;
         if(hasHeaderTable) {
             html += `<div style="text-align: center; font-weight: bold; margin-bottom: 20px;">HASIL INSPEKSI PROTEKSI PASIF</div>`;
             html += `<table style="width:100%; border-collapse: collapse; margin-bottom: 20px;" border="1">
@@ -838,54 +902,6 @@ async function exportPDF() {
     buildPassiveSection('tanggadarurat', 'TANGGA DARURAT', 'Indikator pemeriksaan tangga darurat dapat disusun berdasarkan Permen PU No. 26/PRT/M/2008 tentang Persyaratan Teknis Sistem Proteksi Kebakaran pada Bangunan Gedung dan Lingkungan serta SNI 03-1746-2000 tentang Sarana Jalan Keluar.', checklists.tanggadarurat, false);
 
     html += `</div>`;
-
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    
-    // Tweak Quill styling inside PDF so it renders lists properly
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .ql-align-center { text-align: center; }
-        .ql-align-right { text-align: right; }
-        .ql-align-justify { text-align: justify; }
-        ol { list-style-type: decimal; padding-left: 20px; }
-        ul { list-style-type: disc; padding-left: 20px; }
-        li { margin-bottom: 5px; }
-        img { max-width: 100%; height: auto; }
-    `;
-    container.appendChild(style);
-
-    // Kunci utama agar html2canvas tidak merender blank:
-    // Beri dimensi yang fix, warna background yang jelas, dan pasang di DOM.
-    container.style.width = '800px';
-    container.style.backgroundColor = '#ffffff';
-    container.style.position = 'absolute';
-    container.style.left = '0';
-    container.style.top = '0';
-    container.style.zIndex = '-9999';
-    document.body.appendChild(container);
-
-    const opt = {
-      margin:       15,
-      filename:     `Laporan_Inspeksi_K3_${data.fakultas ? data.fakultas : 'Draf'}_${data.tanggal || 'Date'}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 1, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:    { mode: 'css', avoid: 'tr' }
-    };
-
-    try {
-        await html2pdf().set(opt).from(container).save();
-    } catch(err) {
-        console.error(err);
-        alert('Gagal membuat PDF.');
-    } finally {
-        if (container.parentNode) {
-            container.parentNode.removeChild(container);
-        }
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
 }
 
 // ----------------- HISTORY & STATS LOGIC -----------------
