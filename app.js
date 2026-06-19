@@ -1481,7 +1481,7 @@ Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar 
             sysPrompt += `Buat kesimpulan/rekomendasi yang terstruktur dan analitis. Jangan terlalu panjang, fokus pada poin-poin krusial yang perlu diperbaiki (jika ada yang Tidak Sesuai). Jika semuanya Sesuai, berikan apresiasi dan sarankan pemeliharaan berkelanjutan.`;
         }
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
