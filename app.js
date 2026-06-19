@@ -661,10 +661,6 @@ function syncQuillToInputs() {
 
 async function exportPDF() {
     const form = document.getElementById('inspection-form');
-    if(!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
     
     syncQuillToInputs();
 
@@ -857,10 +853,16 @@ async function exportPDF() {
         img { max-width: 100%; height: auto; }
     `;
     container.appendChild(style);
+    
+    // Attach to DOM so html2canvas can render it properly
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '-9999px';
+    document.body.appendChild(container);
 
     const opt = {
       margin:       15,
-      filename:     `Laporan_Inspeksi_K3_${data.fakultas ? data.fakultas : ''}_${data.tanggal || 'Date'}.pdf`,
+      filename:     `Laporan_Inspeksi_K3_${data.fakultas ? data.fakultas : 'Draf'}_${data.tanggal || 'Date'}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -872,6 +874,9 @@ async function exportPDF() {
         console.error(err);
         alert('Gagal membuat PDF.');
     } finally {
+        if (container.parentNode) {
+            container.parentNode.removeChild(container);
+        }
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
