@@ -385,7 +385,7 @@ function generateChecklistHTML(items, prefix) {
                 </div>
 
                 <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
-                    <input type="file" name="${prefix}_${index}_foto" accept="image/*" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreview(this, '${prefix}_${index}_preview')">
+                    <input type="file" name="${prefix}_${index}_foto" accept="image/*" capture="environment" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreview(this, '${prefix}_${index}_preview')">
                     <img id="${prefix}_${index}_preview" class="hidden w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm" />
                 </div>
             </div>
@@ -426,7 +426,7 @@ function addApar() {
                 </div>
 
                 <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
-                    <input type="file" name="apar_${aparCount}_item_${index}_foto" accept="image/*" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreview(this, 'apar_${aparCount}_item_${index}_preview')">
+                    <input type="file" name="apar_${aparCount}_item_${index}_foto" accept="image/*" capture="environment" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreview(this, 'apar_${aparCount}_item_${index}_preview')">
                     <img id="apar_${aparCount}_item_${index}_preview" class="hidden w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm" />
                 </div>
             </div>
@@ -552,8 +552,26 @@ function showPreview(input, previewId) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            preview.src = e.target.result;
-            preview.classList.remove('hidden');
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const MAX_WIDTH = 600;
+                if (width > MAX_WIDTH) {
+                    height = Math.round((height * MAX_WIDTH) / width);
+                    width = MAX_WIDTH;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                // Kompres menjadi JPEG 60% agar muat di database
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                preview.src = dataUrl;
+                preview.classList.remove('hidden');
+            };
+            img.src = e.target.result;
         }
         reader.readAsDataURL(input.files[0]);
     } else {
@@ -578,17 +596,20 @@ async function saveToFirestore(statusStr, showAlert = true) {
     }
     
     isSaving = true;
-    const btnDraft = document.getElementById('btn-draft');
-    const btnFinal = document.getElementById('btn-final');
+    const btnSave = document.getElementById('btn-save');
     
-    if (btnDraft) { btnDraft.disabled = true; btnDraft.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...'; }
-    if (btnFinal) { btnFinal.disabled = true; btnFinal.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...'; }
+    if (btnSave) { btnSave.disabled = true; btnSave.innerHTML = 'Menyimpan...'; }
     
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
     for (let key in data) {
         if (data[key] instanceof File) {
+            const previewId = key.replace('_foto', '_preview');
+            const previewImg = document.getElementById(previewId);
+            if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
+                data[key + '_base64'] = previewImg.src; // Simpan versi terkompresi
+            }
             delete data[key];
         }
     }
@@ -611,8 +632,9 @@ async function saveToFirestore(statusStr, showAlert = true) {
         }
         
         if(showAlert) {
-            alert(statusStr === 'final' ? 'Laporan Final berhasil disimpan!' : 'Draf berhasil disimpan dan dibackup ke server!');
-            if (statusStr === 'final') showRiwayat();
+            alert('Data Laporan berhasil disimpan!');
+            // Karena sekarang cuma ada 1 tombol simpan, kita bisa biarkan user tetap di form atau langsung ke riwayat
+            // Pilihannya: tetap di form agar bisa lanjut mengedit, jadi tak perlu showRiwayat() kecuali user minta.
         }
         return true;
     } catch(err) {
@@ -621,8 +643,7 @@ async function saveToFirestore(statusStr, showAlert = true) {
         return false;
     } finally {
         isSaving = false;
-        if (btnDraft) { btnDraft.disabled = false; btnDraft.innerHTML = 'Simpan Draf'; }
-        if (btnFinal) { btnFinal.disabled = false; btnFinal.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i> Simpan Final'; }
+        if (btnSave) { btnSave.disabled = false; btnSave.innerHTML = 'Simpan Data'; }
     }
 }
 
@@ -659,66 +680,111 @@ function syncQuillToInputs() {
     }
 }
 
-async function exportPDF() {
+async function exportPDF(skipSave = false) {
     const form = document.getElementById('inspection-form');
-    
     syncQuillToInputs();
-
-    const btn = document.getElementById('btn-export');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Memproses...';
-    btn.disabled = true;
 
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
-    await saveToFirestore('final', false);
-
-    const html = getReportHTML(data);
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .ql-align-center { text-align: center; }
-        .ql-align-right { text-align: right; }
-        .ql-align-justify { text-align: justify; }
-        ol { list-style-type: decimal; padding-left: 20px; }
-        ul { list-style-type: disc; padding-left: 20px; }
-        li { margin-bottom: 5px; }
-        img { max-width: 100%; height: auto; }
-    `;
-    container.appendChild(style);
-
-    container.style.width = '800px';
-    container.style.backgroundColor = '#ffffff';
-    container.style.position = 'absolute';
-    container.style.left = '0';
-    container.style.top = '0';
-    container.style.zIndex = '-9999';
-    document.body.appendChild(container);
-
-    const opt = {
-      margin:       15,
-      filename:     `Laporan_Inspeksi_K3_${data.fakultas ? data.fakultas : 'Draf'}_${data.tanggal || 'Date'}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 1, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:    { mode: 'css', avoid: 'tr' }
-    };
-
-    try {
-        await html2pdf().set(opt).from(container).save();
-    } catch(err) {
-        console.error(err);
-        alert('Gagal membuat PDF.');
-    } finally {
-        if (container.parentNode) {
-            container.parentNode.removeChild(container);
-        }
+    if (!skipSave) {
+        const btn = document.getElementById('btn-export');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...';
+        btn.disabled = true;
+        
+        await saveToFirestore('final', false);
+        
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
+
+    const html = getReportHTML(data);
+    
+    let printContainer = document.getElementById('print-container');
+    if (!printContainer) {
+        printContainer = document.createElement('div');
+        printContainer.id = 'print-container';
+        document.body.appendChild(printContainer);
+    }
+    
+    // Inject final html with styles
+    printContainer.innerHTML = `
+        <style>
+            .ql-align-center { text-align: center; }
+            .ql-align-right { text-align: right; }
+            .ql-align-justify { text-align: justify; }
+            ol { list-style-type: decimal; padding-left: 20px; }
+            ul { list-style-type: disc; padding-left: 20px; }
+            li { margin-bottom: 5px; }
+            img { max-width: 100%; height: auto; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        </style>
+        ${html}
+    `;
+    
+    let printStyle = document.getElementById('print-style-global');
+    if (!printStyle) {
+        printStyle = document.createElement('style');
+        printStyle.id = 'print-style-global';
+        printStyle.innerHTML = `
+            #print-container {
+                display: none;
+            }
+            @media print {
+                body > *:not(#print-container) {
+                    display: none !important;
+                }
+                #print-container {
+                    display: block !important;
+                    width: 100%;
+                    background: white;
+                    color: black;
+                    margin: 0;
+                    padding: 0;
+                }
+                @page {
+                    size: A4 portrait;
+                    margin: 15mm;
+                }
+            }
+        `;
+        document.head.appendChild(printStyle);
+    }
+    
+    // Set title for PDF filename
+    const originalTitle = document.title;
+    document.title = `Laporan_Inspeksi_K3_${data.fakultas ? data.fakultas : 'Draf'}_${data.tanggal || 'Date'}`;
+    
+    // Wait for images to load
+    const images = printContainer.getElementsByTagName('img');
+    const imagePromises = Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+        });
+    });
+    
+    // Show loading state if called from preview
+    const btnPreview = document.querySelector('#preview-modal button');
+    let originalPreviewBtn = '';
+    if (skipSave && btnPreview) {
+        originalPreviewBtn = btnPreview.innerHTML;
+        btnPreview.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyiapkan Dokumen...';
+        btnPreview.disabled = true;
+    }
+
+    await Promise.all(imagePromises);
+    
+    setTimeout(() => {
+        window.print();
+        document.title = originalTitle;
+        if (skipSave && btnPreview) {
+            btnPreview.innerHTML = originalPreviewBtn;
+            btnPreview.disabled = false;
+        }
+    }, 500);
 }
 
 function previewReport() {
@@ -733,8 +799,7 @@ function previewReport() {
 }
 
 function downloadFromPreview() {
-    document.getElementById('preview-modal').classList.add('hidden');
-    exportPDF();
+    exportPDF(true);
 }
 
 function getReportHTML(data) {
@@ -753,7 +818,13 @@ function getReportHTML(data) {
         return d;
     };
 
-    let html = `<div style="font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #000; line-height: 1.5;">`;
+    let html = `
+    <style>
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .report-table th, .report-table td { border: 1px solid #000; padding: 6px; }
+        .report-table th { text-align: center; }
+    </style>
+    <div style="font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #000; line-height: 1.5;">`;
 
     // 1. APAR
     for(let i=1; i<=aparCount; i++) {
@@ -771,14 +842,23 @@ function getReportHTML(data) {
             if(status) totalCount++;
             if(isSesuai) sesuaiCount++;
             
+            let imgHtml = '';
+            const previewId = `apar_${i}_item_${idx}_preview`;
+            const previewImg = document.getElementById(previewId);
+            if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
+                imgHtml = `<img src="${previewImg.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: block; margin: 0 auto;" />`;
+            } else if (data[`apar_${i}_item_${idx}_foto_base64`]) {
+                imgHtml = `<img src="${data[`apar_${i}_item_${idx}_foto_base64`]}" style="max-height: 80px; width: auto; border-radius: 4px; display: block; margin: 0 auto;" />`;
+            }
+            
             checklistRows += `
             <tr>
-                <td style="padding:6px; text-align:center;">${idx+1}.</td>
-                <td style="padding:6px;">${item}</td>
-                <td style="padding:6px; text-align:center;">${isSesuai ? '✓' : ''}</td>
-                <td style="padding:6px; text-align:center;">${isTidak ? '✓' : ''}</td>
-                <td style="padding:6px;">${ket}</td>
-                <td style="padding:6px;"></td>
+                <td style="text-align:center;">${idx+1}.</td>
+                <td>${item}</td>
+                <td style="text-align:center;">${isSesuai ? '✓' : ''}</td>
+                <td style="text-align:center;">${isTidak ? '✓' : ''}</td>
+                <td>${ket}</td>
+                <td style="text-align:center;">${imgHtml}</td>
             </tr>`;
         });
         
@@ -786,33 +866,33 @@ function getReportHTML(data) {
 
         html += `
         <div style="page-break-after: always; margin-bottom: 30px;">
-            <table style="width:100%; border-collapse: collapse; margin-bottom: 20px;" border="1">
-                <tr><td colspan="2" style="padding: 8px; text-align: center; font-weight: bold;">FORM HASIL INSPEKSI APAR</td></tr>
-                <tr><td style="padding: 8px; width: 30%;"><b>Lokasi</b></td><td style="padding: 8px;">${data.lokasi || '-'}</td></tr>
-                <tr><td style="padding: 8px;"><b>Nomor APAR</b></td><td style="padding: 8px;">${data[`apar_${i}_nomor`] || 'N/A'}</td></tr>
-                <tr><td style="padding: 8px;"><b>Media APAR</b></td><td style="padding: 8px;">${data[`apar_${i}_media`] || 'N/A'}</td></tr>
-                <tr><td style="padding: 8px;"><b>Kapasitas</b></td><td style="padding: 8px;">${data[`apar_${i}_kapasitas`] ? data[`apar_${i}_kapasitas`] + ' kg' : 'N/A'}</td></tr>
-                <tr><td style="padding: 8px;"><b>Tahun Produksi Tabung APAR</b></td><td style="padding: 8px;">${formatAparDate(data[`apar_${i}_produksi`])}</td></tr>
-                <tr><td style="padding: 8px;"><b>Tanggal Inspeksi</b></td><td style="padding: 8px;">${formattedDate}</td></tr>
-                <tr><td style="padding: 8px;"><b>Tanggal Kadaluarsa</b></td><td style="padding: 8px;">${formatAparDate(data[`apar_${i}_kadaluarsa`])}</td></tr>
+            <table class="report-table">
+                <tr><td colspan="2" style="text-align: center; font-weight: bold;">FORM HASIL INSPEKSI APAR</td></tr>
+                <tr><td style="width: 30%;"><b>Lokasi</b></td><td>${data.lokasi || '-'}</td></tr>
+                <tr><td><b>Nomor APAR</b></td><td>${data[`apar_${i}_nomor`] || 'N/A'}</td></tr>
+                <tr><td><b>Media APAR</b></td><td>${data[`apar_${i}_media`] || 'N/A'}</td></tr>
+                <tr><td><b>Kapasitas</b></td><td>${data[`apar_${i}_kapasitas`] ? data[`apar_${i}_kapasitas`] + ' kg' : 'N/A'}</td></tr>
+                <tr><td><b>Tahun Produksi Tabung APAR</b></td><td>${formatAparDate(data[`apar_${i}_produksi`])}</td></tr>
+                <tr><td><b>Tanggal Inspeksi</b></td><td>${formattedDate}</td></tr>
+                <tr><td><b>Tanggal Kadaluarsa</b></td><td>${formatAparDate(data[`apar_${i}_kadaluarsa`])}</td></tr>
             </table>
 
-            <table style="width:100%; border-collapse: collapse; margin-bottom: 20px;" border="1">
+            <table class="report-table">
                 <tr>
-                    <th rowspan="2" style="padding:8px; text-align:center;">No</th>
-                    <th rowspan="2" style="padding:8px; text-align:center;">Bagian</th>
-                    <th colspan="2" style="padding:8px; text-align:center;">Kesesuaian APAR</th>
-                    <th rowspan="2" style="padding:8px; text-align:center;">Keterangan</th>
-                    <th rowspan="2" style="padding:8px; text-align:center;">Dokumentasi</th>
+                    <th rowspan="2">No</th>
+                    <th rowspan="2">Bagian</th>
+                    <th colspan="2">Kesesuaian APAR</th>
+                    <th rowspan="2">Keterangan</th>
+                    <th rowspan="2">Dokumentasi</th>
                 </tr>
                 <tr>
-                    <th style="padding:8px; text-align:center;">Sesuai</th>
-                    <th style="padding:8px; text-align:center;">Tidak Sesuai</th>
+                    <th>Sesuai</th>
+                    <th>Tidak Sesuai</th>
                 </tr>
                 ${checklistRows}
                 <tr>
-                    <td colspan="2" style="padding:8px; font-weight:bold;">Persentase Kesesuaian<br>Pemasangan APAR</td>
-                    <td colspan="4" style="padding:8px; font-weight:bold;">${pct}</td>
+                    <td colspan="2" style="font-weight:bold;">Persentase Kesesuaian<br>Pemasangan APAR</td>
+                    <td colspan="4" style="font-weight:bold;">${pct}</td>
                 </tr>
             </table>
         </div>`;
@@ -837,10 +917,10 @@ function getReportHTML(data) {
         html += `<div style="page-break-after: always; margin-bottom: 30px;">`;
         if(hasHeaderTable) {
             html += `<div style="text-align: center; font-weight: bold; margin-bottom: 20px;">HASIL INSPEKSI PROTEKSI PASIF</div>`;
-            html += `<table style="width:100%; border-collapse: collapse; margin-bottom: 20px;" border="1">
-                <tr><td colspan="2" style="padding: 8px; text-align: center; font-weight: bold;">${title}</td></tr>
-                <tr><td style="padding: 8px; width: 30%;"><b>Lokasi</b></td><td style="padding: 8px;">${data.lokasi || '-'}</td></tr>
-                <tr><td style="padding: 8px;"><b>Tanggal Inspeksi</b></td><td style="padding: 8px;">${formattedDate}</td></tr>
+            html += `<table class="report-table">
+                <tr><td colspan="2" style="text-align: center; font-weight: bold;">${title}</td></tr>
+                <tr><td style="width: 30%;"><b>Lokasi</b></td><td>${data.lokasi || '-'}</td></tr>
+                <tr><td><b>Tanggal Inspeksi</b></td><td>${formattedDate}</td></tr>
             </table>`;
             if(desc) html += `<p style="margin-bottom: 10px;">${desc}</p>`;
         } else {
@@ -848,19 +928,19 @@ function getReportHTML(data) {
             if(desc) html += `<p style="margin-bottom: 20px; text-align: justify;">${desc}</p>`;
         }
 
-        html += `<table style="width:100%; border-collapse: collapse; margin-bottom: 30px;" border="1">`;
+        html += `<table class="report-table">`;
         
         let aspectCol = prefix === 'detector' ? 'Aspek yang Diperiksa' : 'Item Pemeriksaan';
         if(prefix === 'evakuasi') aspectCol = 'Bagian/indikator';
 
         html += `
         <tr>
-            ${prefix === 'evakuasi' ? '' : '<th style="padding:8px; text-align:center;">No</th>'}
-            <th style="padding:8px; text-align:center;">${aspectCol}</th>
-            <th style="padding:8px; text-align:center;">Sesuai</th>
-            <th style="padding:8px; text-align:center;">Tidak Sesuai</th>
-            <th style="padding:8px; text-align:center;">Keterangan</th>
-            <th style="padding:8px; text-align:center;">Dokumentasi</th>
+            ${prefix === 'evakuasi' ? '' : '<th>No</th>'}
+            <th>${aspectCol}</th>
+            <th>Sesuai</th>
+            <th>Tidak Sesuai</th>
+            <th>Keterangan</th>
+            <th>Dokumentasi</th>
         </tr>`;
 
         list.forEach((item, idx) => {
@@ -868,14 +948,23 @@ function getReportHTML(data) {
             const ket = data[`${prefix}_${idx}_keterangan`] || '';
             const numStr = prefix === 'evakuasi' ? String.fromCharCode(97 + idx) + '.' : (idx + 1);
             
+            let imgHtml = '';
+            const previewId = `${prefix}_${idx}_preview`;
+            const previewImg = document.getElementById(previewId);
+            if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
+                imgHtml = `<img src="${previewImg.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: block; margin: 0 auto;" />`;
+            } else if (data[`${prefix}_${idx}_foto_base64`]) {
+                imgHtml = `<img src="${data[`${prefix}_${idx}_foto_base64`]}" style="max-height: 80px; width: auto; border-radius: 4px; display: block; margin: 0 auto;" />`;
+            }
+
             html += `
             <tr>
-                ${prefix === 'evakuasi' ? '' : `<td style="padding:6px; text-align:center;">${numStr}</td>`}
-                <td style="padding:6px;">${prefix === 'evakuasi' ? numStr + ' ' : ''}${item}</td>
-                <td style="padding:6px; text-align:center;">${status==='Sesuai'?'✓':''}</td>
-                <td style="padding:6px; text-align:center;">${status==='Tidak Sesuai'?'✓':''}</td>
-                <td style="padding:6px;">${ket}</td>
-                <td style="padding:6px;"></td>
+                ${prefix === 'evakuasi' ? '' : `<td style="text-align:center;">${numStr}</td>`}
+                <td>${prefix === 'evakuasi' ? numStr + ' ' : ''}${item}</td>
+                <td style="text-align:center;">${status==='Sesuai'?'✓':''}</td>
+                <td style="text-align:center;">${status==='Tidak Sesuai'?'✓':''}</td>
+                <td>${ket}</td>
+                <td style="text-align:center;">${imgHtml}</td>
             </tr>`;
         });
         html += `</table>`;
@@ -1015,7 +1104,6 @@ async function loadReport(id) {
             addApar();
         }
 
-        // Set all values
         for (const key in data) {
             const element = document.querySelector(`[name="${key}"]`);
             if (element) {
@@ -1031,6 +1119,16 @@ async function loadReport(id) {
             if (key.startsWith('kesimpulan_') || key.startsWith('rekomendasi_')) {
                 if (window.quillEditors && window.quillEditors[key]) {
                     window.quillEditors[key].root.innerHTML = data[key];
+                }
+            }
+
+            // Restore image previews from base64
+            if (key.endsWith('_base64')) {
+                const previewId = key.replace('_foto_base64', '_preview');
+                const previewImg = document.getElementById(previewId);
+                if (previewImg && data[key]) {
+                    previewImg.src = data[key];
+                    previewImg.classList.remove('hidden');
                 }
             }
         }
