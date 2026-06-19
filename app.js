@@ -165,15 +165,19 @@ function showDashboard() {
 }
 
 function startNewInspection() {
-    currentDocId = null;
     document.getElementById('inspection-form').reset();
+    currentDocId = null;
+    
+    const savedName = localStorage.getItem('k3_user_name');
+    if (savedName) {
+        document.getElementById('input-surveyor').value = savedName;
+    }
+    
     document.getElementById('apar-container').innerHTML = '';
     aparCount = 0;
     deletedApars.clear();
     
-    const userName = localStorage.getItem('k3_user_name') || '';
-    document.getElementById('input-surveyor').value = userName;
-    renderSurveyorChips();
+    renderSurveyorDropdown();
     
     // Clear Quill editors
     if (window.quillEditors) {
@@ -186,34 +190,39 @@ function startNewInspection() {
     startInspection();
 }
 
-function renderSurveyorChips() {
-    const container = document.getElementById('chip-container');
-    if (!container) return;
-    container.innerHTML = '';
+function renderSurveyorDropdown() {
+    const select = document.getElementById('surveyor-dropdown');
+    if (!select) return;
     
-    const input = document.getElementById('input-surveyor');
+    // Reset options except the first one
+    select.innerHTML = '<option value="">-- Tambah Rekan Surveyor --</option>';
+    
     const currentUser = localStorage.getItem('k3_user_name') || '';
     
     Object.values(surveyorMap).forEach(name => {
         if (name === currentUser) return;
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-full text-xs font-semibold text-gray-700 transition cursor-pointer';
-        btn.innerText = '+ ' + name;
-        btn.onclick = () => {
-            let currentVal = input.value.trim();
-            if (currentVal && !currentVal.includes(name)) {
-                input.value = currentVal + ', ' + name;
-                btn.classList.add('bg-green-100', 'border-green-300', 'text-green-800');
-                btn.innerText = '✓ ' + name;
-            } else if (!currentVal) {
-                input.value = name;
-                btn.classList.add('bg-green-100', 'border-green-300', 'text-green-800');
-                btn.innerText = '✓ ' + name;
-            }
-        };
-        container.appendChild(btn);
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.innerText = name;
+        select.appendChild(opt);
     });
+}
+
+function addSurveyorFromDropdown(selectEl) {
+    const name = selectEl.value;
+    if (!name) return;
+    
+    const input = document.getElementById('input-surveyor');
+    let currentVal = input.value.trim();
+    
+    if (currentVal && !currentVal.includes(name)) {
+        input.value = currentVal + ', ' + name;
+    } else if (!currentVal) {
+        input.value = name;
+    }
+    
+    // Reset selection back to default
+    selectEl.value = '';
 }
 
 function getMissingFields(data) {
@@ -1297,7 +1306,7 @@ async function loadReport(id) {
         toggleSection('no-pintu-cb', 'pintudarurat-checklist-container');
         toggleSection('no-tangga-cb', 'tanggadarurat-checklist-container');
         
-        renderSurveyorChips();
+        renderSurveyorDropdown();
     }
 }
 
