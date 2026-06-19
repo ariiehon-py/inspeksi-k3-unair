@@ -414,6 +414,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.quillEditors[`${type}_${sec}`] = new Quill(elId, {
                     theme: 'snow',
                     modules: {
+                        imageResize: {
+                            displaySize: true
+                        },
                         toolbar: [
                             ['bold', 'italic', 'underline'],
                             [{ 'list': 'ordered'}, { 'list': 'bullet' }],
@@ -1398,5 +1401,110 @@ async function renderStatistik() {
             <p class="text-xs text-gray-400 mt-1">${s.sesuai} Sesuai dari total ${s.total} titik inspeksi</p>
         `;
         container.appendChild(div);
+    }
+}
+
+
+const GEMINI_API_KEY = "ISI_API_KEY_ANDA";
+
+async function generateWithGemini(section, type) {
+    if (GEMINI_API_KEY === "ISI_API_KEY_ANDA") {
+        alert("Peringatan: API Key Gemini belum diatur. Buka file app.js dan isi variabel GEMINI_API_KEY di baris paling bawah dengan kunci Anda.");
+        return;
+    }
+
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = 'Memproses...';
+    btn.disabled = true;
+
+    try {
+        let dataContext = "Data Inspeksi:\n";
+        const fakultas = document.querySelector('select[name="fakultas"]').value || 'Fakultas Belum Dipilih';
+        const lokasi = document.querySelector('input[name="lokasi"]').value || 'Lokasi Belum Diisi';
+        
+        dataContext += `Fakultas/Unit: ${fakultas}\nLokasi/Gedung: ${lokasi}\n\n`;
+
+        if (section === 'apar') {
+            const aparItems = [];
+            for (let i = 1; i <= aparCount; i++) {
+                if (deletedApars.has(i)) continue;
+                let itemDetails = [];
+                for (let j = 0; j < checklists.apar.length; j++) {
+                    const status = document.querySelector(`input[name="apar_${i}_item_${j}_status"]:checked`)?.value;
+                    const ket = document.querySelector(`input[name="apar_${i}_item_${j}_keterangan"]`)?.value;
+                    if (status) itemDetails.push(`- ${checklists.apar[j]}: ${status} (Keterangan: ${ket || '-'}) `);
+                }
+                aparItems.push(`APAR ${i}:\n${itemDetails.join('\n')}`);
+            }
+            dataContext += aparItems.join('\n\n');
+        } else {
+            const items = [];
+            for (let j = 0; j < checklists[section].length; j++) {
+                const status = document.querySelector(`input[name="${section}_${j}_status"]:checked`)?.value;
+                const ket = document.querySelector(`input[name="${section}_${j}_keterangan"]`)?.value;
+                if (status) items.push(`- ${checklists[section][j]}: ${status} (Keterangan: ${ket || '-'}) `);
+            }
+            dataContext += items.join('\n');
+        }
+
+        let sysPrompt = `Anda adalah seorang ahli K3 profesional. Berdasarkan Data Inspeksi yang diberikan, buatkan ${type} inspeksi ${section.toUpperCase()} dalam bahasa Indonesia yang baku, profesional, dan to the point.
+
+Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar kompatibel dengan rich text editor. JANGAN gunakan tag markdown (```html) dalam respons Anda. Langsung keluarkan HTML murninya.
+
+`;
+
+        if (section === 'apar') {
+            if (type === 'kesimpulan') {
+                sysPrompt += `CONTOH GAYA BAHASA KESIMPULAN APAR:
+<p><strong>Kesimpulan hasil Inspeksi ${lokasi} ${fakultas}:</strong></p>
+<p><strong>Jarak antar APAR berdasarkan standar (±15m jangkauan):</strong></p>
+<p>Belum sesuai, karena panjang koridor antara APAR No.2 (belakang pintu) dan APAR No.3 (dekat panel) adalah sepanjang kurang lebih 48 m.</p>
+<p><strong>Kesesuaian Jumlah APAR:</strong></p>
+<p>Belum sesuai, karena jika panjang koridor sepanjang 48m, maka setidaknya memerlukan 3 APAR.</p>
+<p><strong>Kesesuaian Jenis APAR dengan potensi bahaya:</strong></p>
+<ul>
+<li>APAR No.1 (Powder), sesuai karena berfokus untuk memberikan proteksi pada ruang yang berisi dokumen.</li>
+<li>APAR No.2 (Liquid Gas) dan APAR 3 (Powder), menukar posisinya karena...</li>
+</ul>`;
+            } else {
+                sysPrompt += `CONTOH GAYA BAHASA REKOMENDASI APAR:
+<ul>
+<li>Memperbarui denah ruangan dan denah APAR dengan mencantumkan jenis APAR-nya.</li>
+<li>Mengganti tanda penunjuk posisi APAR dengan penanda yang telah diatur pada lampiran 1 Permenaker 04/1980.</li>
+<li>Mengoreksi pemasangan ketinggian APAR dari lantai menjadi setinggi 120-125 cm dari permukaan lantai.</li>
+<li>Memindahkan APAR 4 ke depan ruangan.</li>
+<li>Menambahkan 1 APAR jenis powder di koridor pada jarak 15 meter.</li>
+</ul>`;
+            }
+        } else {
+            sysPrompt += `Buat kesimpulan/rekomendasi yang terstruktur dan analitis. Jangan terlalu panjang, fokus pada poin-poin krusial yang perlu diperbaiki (jika ada yang Tidak Sesuai). Jika semuanya Sesuai, berikan apresiasi dan sarankan pemeliharaan berkelanjutan.`;
+        }
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: sysPrompt + "\n\n" + dataContext }] }]
+            })
+        });
+        
+        const resJson = await response.json();
+        if (resJson.error) {
+            throw new Error(resJson.error.message);
+        }
+        
+        let text = resJson.candidates[0].content.parts[0].text;
+        text = text.replace(/```html/gi, '').replace(/```/g, '').trim();
+        
+        if (window.quillEditors && window.quillEditors[`${type}_${section}`]) {
+            window.quillEditors[`${type}_${section}`].root.innerHTML = text;
+        }
+    } catch(err) {
+        console.error(err);
+        alert("Gagal generate dengan Gemini AI. Pastikan API Key valid dan koneksi internet stabil. Error: " + err.message);
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
 }
