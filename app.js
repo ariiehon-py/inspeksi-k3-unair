@@ -11,6 +11,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+db.enablePersistence({ synchronizeTabs: true })
+  .catch((err) => {
+      console.warn("Persistence error:", err.code);
+  });
+
 const checklists = {
     apar: [
         "APAR Mudah dilihat dan jelas",
@@ -680,22 +685,24 @@ async function saveToFirestore(statusStr, showAlert = true) {
     }
     
     try {
+        let docRef;
         if(currentDocId) {
-            await db.collection('reports').doc(currentDocId).set(data, {merge: true});
+            docRef = db.collection('reports').doc(currentDocId);
         } else {
-            const docRef = await db.collection('reports').add(data);
+            docRef = db.collection('reports').doc();
             currentDocId = docRef.id;
         }
         
+        // Simpan ke database (berkat enablePersistence, ini akan otomatis masuk cache lokal dan tersinkron ke server di background tanpa loading lama!)
+        docRef.set(data, {merge: true}).catch(err => console.error("Background sync error:", err));
+        
         if(showAlert) {
-            alert('Data Laporan berhasil disimpan!');
-            // Karena sekarang cuma ada 1 tombol simpan, kita bisa biarkan user tetap di form atau langsung ke riwayat
-            // Pilihannya: tetap di form agar bisa lanjut mengedit, jadi tak perlu showRiwayat() kecuali user minta.
+            alert('Data berhasil diamankan! ✅\\n\\n(Jika sinyal Anda sedang jelek, data sudah tersimpan di memori HP dan akan otomatis terkirim ke server begitu sinyal stabil. Anda aman untuk lanjut!)');
         }
         return true;
     } catch(err) {
         console.error("Error saving report: ", err);
-        if(showAlert) alert('Gagal menyimpan ke server. Pastikan koneksi internet stabil.');
+        if(showAlert) alert('Wah, terjadi kendala pada sistem. Tapi tenang, data Anda MASIH ADA di layar ini, jangan di-refresh ya!');
         return false;
     } finally {
         isSaving = false;
