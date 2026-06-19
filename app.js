@@ -1450,7 +1450,7 @@ async function generateWithGemini(section, type) {
 
         let sysPrompt = `Anda adalah seorang ahli K3 profesional. Berdasarkan Data Inspeksi yang diberikan, buatkan ${type} inspeksi ${section.toUpperCase()} dalam bahasa Indonesia yang baku, profesional, dan to the point.
 
-Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar kompatibel dengan rich text editor. JANGAN gunakan tag markdown (```html) dalam respons Anda. Langsung keluarkan HTML murninya.
+Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar kompatibel dengan rich text editor. JANGAN gunakan tag markdown (\`\`\`html) dalam respons Anda. Langsung keluarkan HTML murninya.
 
 `;
 
