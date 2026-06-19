@@ -839,11 +839,8 @@ async function exportPDF() {
 
     html += `</div>`;
 
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    // Tweak Quill styling inside PDF so it renders lists properly
-    const style = document.createElement('style');
-    style.innerHTML = `
+    const finalHtml = html + `
+    <style>
         .ql-align-center { text-align: center; }
         .ql-align-right { text-align: right; }
         .ql-align-justify { text-align: justify; }
@@ -851,14 +848,7 @@ async function exportPDF() {
         ul { list-style-type: disc; padding-left: 20px; }
         li { margin-bottom: 5px; }
         img { max-width: 100%; height: auto; }
-    `;
-    container.appendChild(style);
-    
-    // Attach to DOM so html2canvas can render it properly
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.top = '-9999px';
-    document.body.appendChild(container);
+    </style>`;
 
     const opt = {
       margin:       15,
@@ -869,14 +859,11 @@ async function exportPDF() {
     };
 
     try {
-        await html2pdf().set(opt).from(container).save();
+        await html2pdf().set(opt).from(finalHtml).save();
     } catch(err) {
         console.error(err);
         alert('Gagal membuat PDF.');
     } finally {
-        if (container.parentNode) {
-            container.parentNode.removeChild(container);
-        }
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
