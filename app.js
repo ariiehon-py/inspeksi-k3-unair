@@ -1413,7 +1413,7 @@ async function renderStatistik() {
 }
 
 
-const GEMINI_API_KEY = "AQ." + "Ab8RN6LZMNgZr_3teBQupw2BNS233VsHOvzp5pocI2Ub8NLCdA";
+const GEMINI_API_KEY = "AQ." + "Ab8RN6JEvdCeBj802HUsZYbslLfW5tXVxbatkMfF7IJIAjOXeA";
 
 async function generateWithGemini(section, type) {
     if (!GEMINI_API_KEY) {
