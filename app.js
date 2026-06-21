@@ -778,7 +778,11 @@ async function saveToFirestore(statusStr, showAlert = true) {
         const errorDiv = document.getElementById('network-error-actions');
         if (errorDiv) errorDiv.classList.remove('hidden');
         
-        if(showAlert) alert('Gagal terhubung ke server! Koneksi internet bermasalah. Silakan scroll ke bawah dan gunakan fitur "Save Local" atau "Download Backup" untuk menyelamatkan data Anda.');
+        if(showAlert) {
+            setTimeout(() => {
+                alert('Gagal terhubung ke server! Koneksi internet bermasalah. Silakan scroll ke bawah dan gunakan fitur "Save Local" atau "Download Backup" untuk menyelamatkan data Anda.');
+            }, 100);
+        }
         return false;
     } finally {
         isSaving = false;
