@@ -1523,7 +1523,11 @@ ATURAN WAJIB:
                 text = text.replace(/```html/gi, '').replace(/```/g, '').trim();
                 
                 if (window.quillEditors && window.quillEditors[`${type}_${section}`]) {
-                    window.quillEditors[`${type}_${section}`].root.innerHTML = text;
+                    const editor = window.quillEditors[`${type}_${section}`];
+                    // Kosongkan dulu
+                    editor.setText('');
+                    // Gunakan API resmi Quill untuk paste HTML
+                    editor.clipboard.dangerouslyPasteHTML(0, text);
                 }
                 
                 success = true;
