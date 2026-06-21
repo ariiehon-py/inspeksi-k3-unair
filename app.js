@@ -1451,6 +1451,13 @@ async function generateWithGemini(section, type) {
             for (let i = 1; i <= aparCount; i++) {
                 if (deletedApars.has(i)) continue;
                 let itemDetails = [];
+                
+                const noApar = document.querySelector(`input[name="apar_${i}_nomor"]`)?.value || i;
+                const lokApar = document.querySelector(`input[name="apar_${i}_lokasi"]`)?.value || '-';
+                const medApar = document.querySelector(`select[name="apar_${i}_media"]`)?.value || '-';
+                
+                itemDetails.push(`Identitas: Nomor ${noApar}, Lokasi di ${lokApar}, Media ${medApar}`);
+
                 for (let j = 0; j < checklists.apar.length; j++) {
                     const status = document.querySelector(`input[name="apar_${i}_item_${j}_status"]:checked`)?.value;
                     const ket = document.querySelector(`input[name="apar_${i}_item_${j}_keterangan"]`)?.value;
@@ -1476,7 +1483,8 @@ ATURAN WAJIB:
 2. JIKA Anda diminta membuat KESIMPULAN, jangan tulis rekomendasi. JIKA diminta REKOMENDASI, jangan tulis kesimpulan.
 3. SANGAT PENTING: Perhatikan status tiap item secara akurat. Jika statusnya "Tidak Ada" atau "Tidak Sesuai", tuliskan faktanya secara jujur, jangan menganggap kondisinya baik.
 4. Gunakan bahasa Indonesia baku, formal, dan rapi.
-5. Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar kompatibel dengan rich text editor. JANGAN gunakan tag markdown (\`\`\`html). Langsung keluarkan HTML murninya.
+5. Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar kompatibel dengan rich text editor. JANGAN gunakan tag markdown (```html). Langsung keluarkan HTML murninya.
+6. Buatlah poin-poin secara DINAMIS berdasarkan data aktual yang diterima. JANGAN menyalin persis struktur dari "CONTOH GAYA BAHASA" jika memang tidak relevan dengan data saat ini. Jika tidak ada temuan buruk, tuliskan bahwa kondisinya sesuai/baik.
 
 `;
 
