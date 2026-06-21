@@ -1483,7 +1483,7 @@ ATURAN WAJIB:
 2. JIKA Anda diminta membuat KESIMPULAN, jangan tulis rekomendasi. JIKA diminta REKOMENDASI, jangan tulis kesimpulan.
 3. SANGAT PENTING: Perhatikan status tiap item secara akurat. Jika statusnya "Tidak Ada" atau "Tidak Sesuai", tuliskan faktanya secara jujur, jangan menganggap kondisinya baik.
 4. Gunakan bahasa Indonesia baku, formal, dan rapi.
-5. Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar kompatibel dengan rich text editor. JANGAN gunakan tag markdown (```html). Langsung keluarkan HTML murninya.
+5. Format output HARUS menggunakan tag HTML dasar (<ul>, <li>, <p>, <strong>) agar kompatibel dengan rich text editor. JANGAN gunakan tag markdown (\`\`\`html). Langsung keluarkan HTML murninya.
 6. Buatlah poin-poin secara DINAMIS berdasarkan data aktual yang diterima. JANGAN menyalin persis struktur dari "CONTOH GAYA BAHASA" jika memang tidak relevan dengan data saat ini. Jika tidak ada temuan buruk, tuliskan bahwa kondisinya sesuai/baik.
 
 `;
