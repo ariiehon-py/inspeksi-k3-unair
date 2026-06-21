@@ -1459,9 +1459,9 @@ async function generateWithGemini(section, type) {
                 itemDetails.push(`Identitas: Nomor ${noApar}, Lokasi di ${lokApar}, Media ${medApar}`);
 
                 for (let j = 0; j < checklists.apar.length; j++) {
-                    const status = document.querySelector(`input[name="apar_${i}_item_${j}_status"]:checked`)?.value;
-                    const ket = document.querySelector(`input[name="apar_${i}_item_${j}_keterangan"]`)?.value;
-                    if (status) itemDetails.push(`- ${checklists.apar[j]}: ${status} (Keterangan: ${ket || '-'}) `);
+                    const status = document.querySelector(`input[name="apar_${i}_item_${j}_status"]:checked`)?.value || 'Belum Diinspeksi';
+                    const ket = document.querySelector(`input[name="apar_${i}_item_${j}_keterangan"]`)?.value || '-';
+                    itemDetails.push(`- ${checklists.apar[j]}: ${status} (Keterangan: ${ket})`);
                 }
                 aparItems.push(`APAR ${i}:\n${itemDetails.join('\n')}`);
             }
@@ -1469,9 +1469,9 @@ async function generateWithGemini(section, type) {
         } else {
             const items = [];
             for (let j = 0; j < checklists[section].length; j++) {
-                const status = document.querySelector(`input[name="${section}_${j}_status"]:checked`)?.value;
-                const ket = document.querySelector(`input[name="${section}_${j}_keterangan"]`)?.value;
-                if (status) items.push(`- ${checklists[section][j]}: ${status} (Keterangan: ${ket || '-'}) `);
+                const status = document.querySelector(`input[name="${section}_${j}_status"]:checked`)?.value || 'Belum Diinspeksi';
+                const ket = document.querySelector(`input[name="${section}_${j}_keterangan"]`)?.value || '-';
+                items.push(`- ${checklists[section][j]}: ${status} (Keterangan: ${ket})`);
             }
             dataContext += items.join('\n');
         }
@@ -1490,29 +1490,12 @@ ATURAN WAJIB:
 
         if (section === 'apar') {
             if (type === 'kesimpulan') {
-                sysPrompt += `CONTOH GAYA BAHASA KESIMPULAN APAR:
-<p><strong>Kesimpulan hasil Inspeksi ${lokasi} ${fakultas}:</strong></p>
-<p><strong>Jarak antar APAR berdasarkan standar (±15m jangkauan):</strong></p>
-<p>Belum sesuai, karena panjang koridor antara APAR No.2 (belakang pintu) dan APAR No.3 (dekat panel) adalah sepanjang kurang lebih 48 m.</p>
-<p><strong>Kesesuaian Jumlah APAR:</strong></p>
-<p>Belum sesuai, karena jika panjang koridor sepanjang 48m, maka setidaknya memerlukan 3 APAR.</p>
-<p><strong>Kesesuaian Jenis APAR dengan potensi bahaya:</strong></p>
-<ul>
-<li>APAR No.1 (Powder), sesuai karena berfokus untuk memberikan proteksi pada ruang yang berisi dokumen.</li>
-<li>APAR No.2 (Liquid Gas) dan APAR 3 (Powder), menukar posisinya karena...</li>
-</ul>`;
+                sysPrompt += `Buatlah poin-poin kesimpulan terkait kondisi APAR. Kelompokkan menjadi beberapa paragraf/poin jika diperlukan (misal: Kondisi Fisik, Pemasangan, dll). Jika semua Sesuai, tuliskan dengan jelas bahwa seluruh APAR dalam kondisi baik dan memenuhi standar. JANGAN membuat judul-judul poin yang isinya kosong.`;
             } else {
-                sysPrompt += `CONTOH GAYA BAHASA REKOMENDASI APAR:
-<ul>
-<li>Memperbarui denah ruangan dan denah APAR dengan mencantumkan jenis APAR-nya.</li>
-<li>Mengganti tanda penunjuk posisi APAR dengan penanda yang telah diatur pada lampiran 1 Permenaker 04/1980.</li>
-<li>Mengoreksi pemasangan ketinggian APAR dari lantai menjadi setinggi 120-125 cm dari permukaan lantai.</li>
-<li>Memindahkan APAR 4 ke depan ruangan.</li>
-<li>Menambahkan 1 APAR jenis powder di koridor pada jarak 15 meter.</li>
-</ul>`;
+                sysPrompt += `Buatlah poin-poin rekomendasi perbaikan untuk APAR yang berstatus "Tidak Sesuai" atau "Belum Diinspeksi". Jika semua APAR "Sesuai", rekomendasikan untuk sekadar mempertahankan jadwal maintenance rutin.`;
             }
         } else {
-            sysPrompt += `Buat ${type} secara to the point. Jangan terlalu panjang, fokus pada fakta di lapangan. Ingat, jangan ada basa-basi, salam, atau kata pengantar. Langsung berikan poin-poinnya.`;
+            sysPrompt += `Buat ${type} secara to the point. Jangan terlalu panjang, fokus pada fakta di lapangan. Jika semua berstatus "Sesuai", tuliskan apresiasi atau kesimpulan bahwa kondisi telah baik dan penuhi standar.`;
         }
 
         const modelsToTry = ['gemini-3.5-flash', 'gemini-3-flash-preview'];
