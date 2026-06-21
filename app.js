@@ -957,8 +957,8 @@ function getReportHTML(data) {
     <div style="font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #000; line-height: 1.5;">`;
 
     // 1. APAR
-    const localAparCount = data.aparCount || 0;
-    const localDeletedApars = data.deletedApars ? new Set(data.deletedApars) : new Set();
+    const localAparCount = data.aparCount !== undefined ? data.aparCount : aparCount;
+    const localDeletedApars = data.deletedApars ? new Set(data.deletedApars) : deletedApars;
 
     for(let i=1; i<=localAparCount; i++) {
         if(localDeletedApars.has(i)) continue;
