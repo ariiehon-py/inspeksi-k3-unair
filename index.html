@@ -188,7 +188,13 @@
                         <h1 class="text-2xl font-bold text-dark mb-1">Formulir Inspeksi Lapangan</h1>
                         <p class="text-gray-500 text-sm">Lengkapi tahapan identifikasi area, APAR, dan Proteksi Pasif per Fakultas.</p>
                     </div>
-                    <button onclick="showDashboard()" class="text-sm font-bold text-gray-500 hover:text-dark px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm w-fit">Kembali</button>
+                    <div class="flex items-center gap-3">
+                        <label for="file-import-backup" class="cursor-pointer text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg shadow-sm w-fit transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-file-import"></i> Import (.inspeksi)
+                        </label>
+                        <input type="file" id="file-import-backup" class="hidden" accept=".inspeksi" onchange="importBackup(event)" />
+                        <button onclick="showDashboard()" class="text-sm font-bold text-gray-500 hover:text-dark px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm w-fit">Kembali</button>
+                    </div>
                 </div>
 
                 <form id="inspection-form" class="space-y-6">
@@ -437,6 +443,10 @@
                             <button type="button" onclick="resetForm()" class="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-bold transition-colors">
                                 Reset
                             </button>
+                            <button type="button" onclick="document.getElementById('file-input').click()" class="px-5 py-2.5 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-bold transition-colors flex items-center">
+                                <i class="fa-solid fa-file-import mr-2"></i> Import
+                            </button>
+                            <input type="file" id="file-input" class="hidden" onchange="importData(event)">
                             <button type="button" id="btn-save" onclick="saveDraft()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors" title="Simpan data ke server">
                                 Simpan Data
                             </button>

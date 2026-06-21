@@ -11,10 +11,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-db.enablePersistence({ synchronizeTabs: true })
-  .catch((err) => {
-      console.warn("Persistence error:", err.code);
-  });
+// Disable Firebase Persistence agar save lokal sepenuhnya dikendalikan manual
+// db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+//     console.error("Firebase persistence error:", err.code);
+// });
 
 const checklists = {
     apar: [
@@ -760,16 +760,25 @@ async function saveToFirestore(statusStr, showAlert = true) {
             currentDocId = docRef.id;
         }
         
-        // Simpan ke database (berkat enablePersistence, ini akan otomatis masuk cache lokal dan tersinkron ke server di background tanpa loading lama!)
-        docRef.set(data, {merge: true}).catch(err => console.error("Background sync error:", err));
+        // Timeout 10 detik untuk simulasi network error atau server down
+        const savePromise = docRef.set(data, {merge: true});
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('TIMEOUT_NO_INTERNET')), 10000);
+        });
+        
+        await Promise.race([savePromise, timeoutPromise]);
         
         if(showAlert) {
-            alert('Data berhasil diamankan! ✅\\n\\n(Jika sinyal Anda sedang jelek, data sudah tersimpan di memori HP dan akan otomatis terkirim ke server begitu sinyal stabil. Anda aman untuk lanjut!)');
+            alert('Data berhasil diamankan ke server! ✅');
         }
+        document.getElementById('network-error-actions')?.classList.add('hidden');
         return true;
     } catch(err) {
         console.error("Error saving report: ", err);
-        if(showAlert) alert('Wah, terjadi kendala pada sistem. Tapi tenang, data Anda MASIH ADA di layar ini, jangan di-refresh ya!');
+        const errorDiv = document.getElementById('network-error-actions');
+        if (errorDiv) errorDiv.classList.remove('hidden');
+        
+        if(showAlert) alert('Gagal terhubung ke server! Koneksi internet bermasalah. Silakan scroll ke bawah dan gunakan fitur "Save Local" atau "Download Backup" untuk menyelamatkan data Anda.');
         return false;
     } finally {
         isSaving = false;
@@ -1648,4 +1657,145 @@ async function downloadAllByFakultas() {
         btn.innerHTML = originalBtn;
         btn.disabled = false;
     }, 500);
+}
+
+
+function getFormDataForBackup() {
+    syncQuillToInputs();
+    const form = document.getElementById('inspection-form');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Convert files to base64 immediately for backup
+    for (let key in data) {
+        if (data[key] instanceof File) {
+            const previewId = key.replace('_foto', '_preview');
+            const previewImg = document.getElementById(previewId);
+            if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
+                data[key + '_base64'] = previewImg.src;
+            }
+            delete data[key];
+        }
+    }
+    
+    data.aparCount = aparCount;
+    data.deletedApars = Array.from(deletedApars);
+    if (!data.report_id && currentDocId) data.report_id = currentDocId;
+    else if (!data.report_id) data.report_id = Date.now().toString();
+    
+    return data;
+}
+
+function downloadBackup() {
+    const data = getFormDataForBackup();
+    const jsonStr = JSON.stringify(data);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const fakultas = data.fakultas ? data.fakultas.replace(/\\s+/g, '_') : 'Draft';
+    const filename = `Backup_Inspeksi_${fakultas}_${Date.now()}.inspeksi`;
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('File backup (.inspeksi) berhasil diunduh! Simpan file ini baik-baik. Nanti Anda bisa meng-uploadnya kembali lewat menu Import di bagian atas form.');
+}
+
+function saveToLocalBrowser() {
+    const data = getFormDataForBackup();
+    const jsonStr = JSON.stringify(data);
+    
+    try {
+        localStorage.setItem(`inspeksi_backup_${data.report_id}`, jsonStr);
+        alert('Data berhasil disimpan ke memori Local Browser! Anda bisa menutup halaman ini dengan aman. Nanti Anda bisa memulihkannya lewat fitur Import jika diperlukan (hubungi developer untuk panduan local browser). Atau untuk lebih aman, gunakan tombol Download Backup saja.');
+    } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+            alert('Gagal menyimpan ke Local Browser: Memori penuh karena terlalu banyak foto! HARAP GUNAKAN TOMBOL "Download File Backup" SEKARANG JUGA untuk menyelamatkan data Anda.');
+        } else {
+            alert('Terjadi kesalahan saat menyimpan ke Local Browser: ' + e.message);
+        }
+    }
+}
+
+function importBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!confirm('Peringatan: Mengimpor file akan menimpa seluruh isian form saat ini. Lanjutkan?')) {
+                event.target.value = '';
+                return;
+            }
+            
+            // Masukkan data ke cache riwayat sementara agar bisa diproses oleh fungsi loadReport yang sudah ada
+            currentDocId = data.report_id;
+            
+            // Hapus form apar saat ini
+            document.getElementById('apar-container').innerHTML = '';
+            aparCount = 0;
+            deletedApars.clear();
+            
+            if (data.deletedApars) deletedApars = new Set(data.deletedApars);
+            if (data.aparCount) {
+                for (let i = 1; i <= data.aparCount; i++) {
+                    if(!deletedApars.has(i)) addApar();
+                    else aparCount++;
+                }
+            } else {
+                addApar();
+            }
+
+            for (const key in data) {
+                if (key.endsWith('_base64')) {
+                    // Restore image preview
+                    const originalKey = key.replace('_base64', '');
+                    const previewId = originalKey.replace('_foto', '_preview');
+                    const previewImg = document.getElementById(previewId);
+                    if (previewImg) {
+                        previewImg.src = data[key];
+                        previewImg.classList.remove('hidden');
+                    }
+                    continue;
+                }
+                
+                const element = document.querySelector(`[name="${key}"]`);
+                if (element) {
+                    if (element.type === 'radio' || element.type === 'checkbox') {
+                        const el = document.querySelector(`[name="${key}"][value="${data[key]}"]`);
+                        if(el) el.checked = true;
+                    } else if (element.type !== 'file') {
+                        element.value = data[key];
+                    }
+                }
+                
+                // Set Quill content
+                if (key.startsWith('kesimpulan_') || key.startsWith('rekomendasi_')) {
+                    if (window.quillEditors && window.quillEditors[key]) {
+                        window.quillEditors[key].root.innerHTML = data[key];
+                    }
+                }
+            }
+            
+            document.getElementById('network-error-actions')?.classList.add('hidden');
+            alert('File backup berhasil dipulihkan! Semua data dan foto telah kembali. Anda bisa mencoba menyimpannya lagi ke server.');
+            event.target.value = '';
+        } catch (error) {
+            alert('Gagal membaca file backup. Pastikan file yang diunggah benar-benar berekstensi .inspeksi dan tidak rusak.');
+            console.error(error);
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Handler untuk tombol import bawaan dari sesi sebelumnya (jika ada)
+function importData(event) {
+    importBackup(event);
 }
