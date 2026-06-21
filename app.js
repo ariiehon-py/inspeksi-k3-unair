@@ -1490,13 +1490,15 @@ ATURAN WAJIB:
 
         if (section === 'apar') {
             if (type === 'kesimpulan') {
-                sysPrompt += `Buatlah poin-poin kesimpulan terkait kondisi APAR. Kelompokkan menjadi beberapa paragraf/poin jika diperlukan (misal: Kondisi Fisik, Pemasangan, dll). Jika semua Sesuai, tuliskan dengan jelas bahwa seluruh APAR dalam kondisi baik dan memenuhi standar. JANGAN membuat judul-judul poin yang isinya kosong.`;
+                sysPrompt += `Buatlah poin-poin kesimpulan terkait kondisi APAR. Kelompokkan menjadi beberapa paragraf/poin jika diperlukan (misal: Kondisi Fisik, Pemasangan, dll). Jika semua Sesuai, tuliskan dengan jelas bahwa seluruh APAR dalam kondisi baik dan memenuhi standar.`;
             } else {
                 sysPrompt += `Buatlah poin-poin rekomendasi perbaikan untuk APAR yang berstatus "Tidak Sesuai" atau "Belum Diinspeksi". Jika semua APAR "Sesuai", rekomendasikan untuk sekadar mempertahankan jadwal maintenance rutin.`;
             }
         } else {
             sysPrompt += `Buat ${type} secara to the point. Jangan terlalu panjang, fokus pada fakta di lapangan. Jika semua berstatus "Sesuai", tuliskan apresiasi atau kesimpulan bahwa kondisi telah baik dan penuhi standar.`;
         }
+        
+        sysPrompt += `\n\nATURAN TAMBAHAN SANGAT PENTING: JANGAN SEKALI-KALI membuat judul, sub-judul, atau poin list yang isinya kosong/blank. Jika suatu kategori tidak memiliki isi/data, abaikan saja kategorinya! Pastikan setiap baris yang Anda tulis memiliki makna dan penjelasan.`;
 
         const modelsToTry = ['gemini-3.5-flash', 'gemini-3-flash-preview'];
         let success = false;
