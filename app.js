@@ -1303,21 +1303,6 @@ function getReportHTML(data) {
         }
     };
 
-        const kesimpulan = data[`kesimpulan_${prefix}`];
-        const rekomendasi = data[`rekomendasi_${prefix}`];
-        if(kesimpulan || rekomendasi) {
-            html += `<div style="margin-top: 20px;">`;
-            if(kesimpulan) {
-                html += `<p style="font-weight:bold; margin-bottom:10px;">Kesimpulan hasil Inspeksi:</p><div style="margin-bottom:20px; padding-left: 20px;">${kesimpulan}</div>`;
-            }
-            if(rekomendasi) {
-                html += `<p style="font-weight:bold; margin-bottom:10px;">Rekomendasi:</p><div style="margin-bottom:20px; padding-left: 20px;">${rekomendasi}</div>`;
-            }
-            html += `</div>`;
-        }
-        html += `</div>`;
-    };
-
     buildPassiveSection('evakuasi', 'FORM HASIL INSPEKSI JALUR EVAKUASI/ PINTU DARURAT/ TANGGA DARURAT/PETA APAR/ PETA JALUR EVAKUASI', 'Kesesuaian jalur evakuasi dan safety sign :', checklists.evakuasi, true);
     buildPassiveSection('detector', 'DETEKTOR', 'Indikator pemeriksaan detektor kebakaran (smoke detector/heat detector) sesuai peraturan dan standar yang berlaku di Indonesia, maka acuan utamanya adalah SNI 03-3985-2000 tentang tata cara perencanaan, pemasangan, pengujian, dan pemeliharaan sistem deteksi dan alarm kebakaran serta Permen PUPR No. 26/PRT/M/2008 tentang Persyaratan Teknis Sistem Proteksi Kebakaran pada Bangunan Gedung.', checklists.detector, false);
     buildPassiveSection('firealarm', 'FIRE ALARM', 'Indikator pemeriksaan Fire Alarm (Sistem Alarm Kebakaran) mengacu pada SNI 03-3985-2000 tentang Tata Cara Perencanaan, Pemasangan, Pengujian, dan Pemeliharaan Sistem Deteksi dan Alarm Kebakaran, Permen PUPR No. 26/PRT/M/2008, serta Permenaker No. PER.04/MEN/1980 tentang Syarat-Syarat Pemasangan dan Pemeliharaan APAR yang secara umum mengatur sistem proteksi kebakaran di tempat kerja.', checklists.firealarm, false);
