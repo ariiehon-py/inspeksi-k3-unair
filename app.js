@@ -95,6 +95,18 @@ const checklists = {
 let aparCount = 0;
 let deletedApars = new Set();
 
+let firealarmCount = 0;
+let deletedFirealarms = new Set();
+
+let evakuasiCount = 0;
+let deletedEvakuasis = new Set();
+
+let pintudaruratCount = 0;
+let deletedPintudarurats = new Set();
+
+let tanggadaruratCount = 0;
+let deletedTanggadarurats = new Set();
+
 const surveyorMap = {
     'neffrety': 'Dr. Neffrety Nilamsari, S.Sos., M.Kes.',
     'herman': 'Herman Bagus Dwicahyo, S.KM., M.KKK.',
@@ -400,10 +412,12 @@ window.quillEditors = {};
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('detector-checklist-container').innerHTML = generateChecklistHTML(checklists.detector, 'detector');
-    document.getElementById('firealarm-checklist-container').innerHTML = generateChecklistHTML(checklists.firealarm, 'firealarm');
-    document.getElementById('evakuasi-checklist-container').innerHTML = generateChecklistHTML(checklists.evakuasi, 'evakuasi');
-    document.getElementById('pintudarurat-checklist-container').innerHTML = generateChecklistHTML(checklists.pintudarurat, 'pintudarurat');
-    document.getElementById('tanggadarurat-checklist-container').innerHTML = generateChecklistHTML(checklists.tanggadarurat, 'tanggadarurat');
+    
+    // Inisialisasi awal 1 card untuk masing-masing pasif dinamis
+    addPassiveItem('firealarm', 'Fire Alarm');
+    addPassiveItem('evakuasi', 'Jalur Evakuasi');
+    addPassiveItem('pintudarurat', 'Pintu Darurat');
+    addPassiveItem('tanggadarurat', 'Tangga Darurat');
     
     // Init Quill Editors
     const sections = ['apar', 'detector', 'firealarm', 'evakuasi', 'pintudarurat', 'tanggadarurat'];
@@ -458,8 +472,8 @@ function generateChecklistHTML(items, prefix) {
                 </div>
 
                 <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
-                    <input type="file" name="${prefix}_${index}_foto" accept="image/*" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreview(this, '${prefix}_${index}_preview')">
-                    <img id="${prefix}_${index}_preview" class="hidden w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm" />
+                    <input type="file" multiple name="${prefix}_${index}_foto" accept="image/*" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreviews(this, '${prefix}_${index}_preview_container')">
+                    <div id="${prefix}_${index}_preview_container" class="flex flex-wrap gap-2 mt-2"></div>
                 </div>
             </div>
         </div>`;
@@ -554,8 +568,8 @@ function addApar() {
                 </div>
 
                 <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
-                    <input type="file" name="apar_${aparCount}_item_${index}_foto" accept="image/*" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreview(this, 'apar_${aparCount}_item_${index}_preview')">
-                    <img id="apar_${aparCount}_item_${index}_preview" class="hidden w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm" />
+                    <input type="file" multiple name="apar_${aparCount}_item_${index}_foto" accept="image/*" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreviews(this, 'apar_${aparCount}_item_${index}_preview_container')">
+                    <div id="apar_${aparCount}_item_${index}_preview_container" class="flex flex-wrap gap-2 mt-2"></div>
                 </div>
             </div>
         </div>`;
@@ -633,6 +647,88 @@ function removeApar(index) {
     }
 }
 
+function addPassiveItem(prefix, title) {
+    let countVar, deletedSet, container;
+    
+    if (prefix === 'firealarm') { firealarmCount++; countVar = firealarmCount; deletedSet = deletedFirealarms; }
+    else if (prefix === 'evakuasi') { evakuasiCount++; countVar = evakuasiCount; deletedSet = deletedEvakuasis; }
+    else if (prefix === 'pintudarurat') { pintudaruratCount++; countVar = pintudaruratCount; deletedSet = deletedPintudarurats; }
+    else if (prefix === 'tanggadarurat') { tanggadaruratCount++; countVar = tanggadaruratCount; deletedSet = deletedTanggadarurats; }
+    
+    container = document.getElementById(`${prefix}-checklist-container`);
+    const div = document.createElement('div');
+    div.id = `${prefix}_card_${countVar}`;
+    div.className = "bg-white p-6 md:p-8 rounded-2xl border border-gray-200 mb-6 relative group";
+    
+    let checklistHTML = '';
+    checklists[prefix].forEach((item, index) => {
+        checklistHTML += `
+        <div class="flex flex-col lg:flex-row gap-4 py-6 border-t border-gray-50 w-full items-start">
+            <div class="w-full lg:w-1/3 text-sm font-medium text-dark leading-relaxed pr-4">
+                ${index + 1}. <span class="text-gray-600 font-normal">${item}</span>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-4 w-full lg:w-2/3">
+                <div class="flex items-center gap-5 shrink-0">
+                    <label class="inline-flex items-center cursor-pointer group">
+                        <input type="radio" name="${prefix}_${countVar}_item_${index}_status" value="Sesuai" class="w-5 h-5 border-gray-300 text-primary focus:ring-primary" onchange="autoFillKeterangan(this, \`${item}\`)">
+                        <span class="ml-2 text-sm text-gray-700 group-hover:text-dark transition">Sesuai</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer group">
+                        <input type="radio" name="${prefix}_${countVar}_item_${index}_status" value="Tidak Sesuai" class="w-5 h-5 border-gray-300 text-red-600 focus:ring-red-600" onchange="autoFillKeterangan(this, \`${item}\`)">
+                        <span class="ml-2 text-sm text-gray-700 group-hover:text-dark transition">Tidak Sesuai</span>
+                    </label>
+                </div>
+
+                <div class="flex-1 min-w-[150px]">
+                    <input type="text" name="${prefix}_${countVar}_item_${index}_keterangan" oninput="this.removeAttribute('data-auto')" placeholder="Keterangan..." class="w-full px-4 py-2 text-sm border-gray-300 rounded-lg bg-gray-50 focus:bg-white focus:border-primary focus:ring-primary transition shadow-sm">
+                </div>
+
+                <div class="w-full sm:w-auto shrink-0 flex flex-col gap-2">
+                    <input type="file" multiple name="${prefix}_${countVar}_item_${index}_foto" accept="image/*" class="w-full max-w-[200px] sm:max-w-xs text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer transition-colors overflow-hidden" onchange="showPreviews(this, '${prefix}_${countVar}_item_${index}_preview_container')">
+                    <div id="${prefix}_${countVar}_item_${index}_preview_container" class="flex flex-wrap gap-2 mt-2"></div>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    let iconClass = 'fa-check';
+    if (prefix === 'firealarm') iconClass = 'fa-bell';
+    else if (prefix === 'evakuasi') iconClass = 'fa-person-running';
+    else if (prefix === 'pintudarurat') iconClass = 'fa-door-open';
+    else if (prefix === 'tanggadarurat') iconClass = 'fa-stairs';
+
+    div.innerHTML = `
+        <button type="button" onclick="removePassiveItem('${prefix}', ${countVar})" class="absolute top-6 right-6 text-gray-300 hover:text-red-500 transition-colors" title="Hapus ${title}">
+            <i class="fa-solid fa-trash-can text-2xl"></i>
+        </button>
+        <h3 class="text-xl font-bold text-dark mb-6 flex items-center gap-3">
+            <div class="bg-gray-100 p-2 rounded-lg"><i class="fa-solid ${iconClass} text-primary"></i></div> 
+            <span class="apar-card-title">Data ${title} ${countVar}</span>
+        </h3>
+        
+        <div class="mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lokasi Spesifik</label>
+            <input type="text" name="${prefix}_${countVar}_lokasi" class="w-full px-4 py-2 border-gray-300 rounded-xl focus:border-primary focus:ring-primary transition" placeholder="Contoh: Sayap Kiri, Dekat Toilet...">
+        </div>
+        
+        <div class="space-y-0 divide-y divide-gray-100">
+            ${checklistHTML}
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+function removePassiveItem(prefix, id) {
+    if (confirm('Yakin ingin menghapus item ini?')) {
+        document.getElementById(`${prefix}_card_${id}`).style.display = 'none';
+        if (prefix === 'firealarm') deletedFirealarms.add(id);
+        else if (prefix === 'evakuasi') deletedEvakuasis.add(id);
+        else if (prefix === 'pintudarurat') deletedPintudarurats.add(id);
+        else if (prefix === 'tanggadarurat') deletedTanggadarurats.add(id);
+    }
+}
+
 function reindexApar() {
     const titles = document.querySelectorAll('.apar-card-title');
     titles.forEach((el, idx) => {
@@ -675,44 +771,52 @@ function toggleSection(cbId, containerId) {
 
 // Removed obsolete toggleRekomendasi functions
 
-function showPreview(input, previewId) {
-    const preview = document.getElementById(previewId);
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                const MAX_WIDTH = 600;
-                if (width > MAX_WIDTH) {
-                    height = Math.round((height * MAX_WIDTH) / width);
-                    width = MAX_WIDTH;
-                }
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                // Kompres menjadi JPEG 60% agar muat di database
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                preview.src = dataUrl;
-                preview.classList.remove('hidden');
-                
-                // OTOMATIS DOWNLOAD FOTO SEBAGAI BACKUP KE HP
-                const a = document.createElement('a');
-                a.href = dataUrl;
-                a.download = `Backup_Foto_${previewId}_${Date.now()}.jpg`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            };
-            img.src = e.target.result;
-        }
-        reader.readAsDataURL(input.files[0]);
-    } else {
-        preview.src = '';
-        preview.classList.add('hidden');
+function showPreviews(input, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Bersihkan container sebelumnya, atau biarkan append?
+    // Lebih baik dibersihkan agar setiap milih file, yang tampil adalah yang dipilih
+    container.innerHTML = '';
+    
+    if (input.files && input.files.length > 0) {
+        Array.from(input.files).forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const MAX_WIDTH = 600;
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    const previewImg = document.createElement('img');
+                    previewImg.src = dataUrl;
+                    previewImg.className = "w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm";
+                    container.appendChild(previewImg);
+                    
+                    // OTOMATIS DOWNLOAD FOTO SEBAGAI BACKUP KE HP
+                    const a = document.createElement('a');
+                    a.href = dataUrl;
+                    a.download = `Backup_Foto_${containerId}_${index}_${Date.now()}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                };
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
     }
 }
 
@@ -741,17 +845,32 @@ async function saveToFirestore(statusStr, showAlert = true) {
     
     for (let key in data) {
         if (data[key] instanceof File) {
-            const previewId = key.replace('_foto', '_preview');
-            const previewImg = document.getElementById(previewId);
-            if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
-                data[key + '_base64'] = previewImg.src; // Simpan versi terkompresi
-            }
-            delete data[key];
+            delete data[key]; // Hapus file object
         }
     }
     
+    // Ambil semua foto dari kontainer preview
+    const previewContainers = document.querySelectorAll('[id$="_preview_container"]');
+    previewContainers.forEach(container => {
+        const imgs = container.querySelectorAll('img');
+        const keyBase = container.id.replace('_preview_container', ''); // apar_1_item_0
+        if (imgs.length > 0) {
+            data[keyBase + '_foto_base64'] = Array.from(imgs).map(img => img.src);
+        }
+    });
+    
     data.aparCount = aparCount;
     data.deletedApars = Array.from(deletedApars);
+    
+    data.firealarmCount = firealarmCount;
+    data.deletedFirealarms = Array.from(deletedFirealarms);
+    data.evakuasiCount = evakuasiCount;
+    data.deletedEvakuasis = Array.from(deletedEvakuasis);
+    data.pintudaruratCount = pintudaruratCount;
+    data.deletedPintudarurats = Array.from(deletedPintudarurats);
+    data.tanggadaruratCount = tanggadaruratCount;
+    data.deletedTanggadarurats = Array.from(deletedTanggadarurats);
+    
     data.status = statusStr;
     
     // Jangan menimpa report_id jika sudah ada, buat baru HANYA JIKA belum punya ID (inspeksi baru)
@@ -997,12 +1116,25 @@ function getReportHTML(data) {
             if(isSesuai) sesuaiCount++;
             
             let imgHtml = '';
-            const previewId = `apar_${i}_item_${idx}_preview`;
-            const previewImg = document.getElementById(previewId);
-            if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
-                imgHtml = `<img src="${previewImg.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: block; margin: 0 auto;" />`;
-            } else if (data[`apar_${i}_item_${idx}_foto_base64`]) {
-                imgHtml = `<img src="${data[`apar_${i}_item_${idx}_foto_base64`]}" style="max-height: 80px; width: auto; border-radius: 4px; display: block; margin: 0 auto;" />`;
+            if (Array.isArray(data[`apar_${i}_item_${idx}_foto_base64`])) {
+                imgHtml = data[`apar_${i}_item_${idx}_foto_base64`].map(src => `<img src="${src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`).join('');
+            } else if (typeof data[`apar_${i}_item_${idx}_foto_base64`] === 'string') {
+                imgHtml = `<img src="${data[`apar_${i}_item_${idx}_foto_base64`]}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`;
+            } else {
+                // Fallback to DOM elements for unsaved preview
+                const containerId = `apar_${i}_item_${idx}_preview_container`;
+                const container = document.getElementById(containerId);
+                if (container && container.querySelectorAll('img').length > 0) {
+                    const imgs = Array.from(container.querySelectorAll('img'));
+                    imgHtml = imgs.map(img => `<img src="${img.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`).join('');
+                } else {
+                    // Fallback backward compatibility
+                    const previewId = `apar_${i}_item_${idx}_preview`;
+                    const previewImg = document.getElementById(previewId);
+                    if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
+                        imgHtml = `<img src="${previewImg.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`;
+                    }
+                }
             }
             
             checklistRows += `
@@ -1068,60 +1200,108 @@ function getReportHTML(data) {
     const buildPassiveSection = (prefix, title, desc, list, hasHeaderTable) => {
         if(data[`no_${prefix}`] === '1') return;
 
-        html += `<div style="page-break-after: always; margin-bottom: 30px;">`;
-        if(hasHeaderTable) {
-            html += `<div style="text-align: center; font-weight: bold; margin-bottom: 20px;">HASIL INSPEKSI PROTEKSI PASIF</div>`;
-            html += `<table class="report-table">
-                <tr><td colspan="2" style="text-align: center; font-weight: bold;">${title}</td></tr>
-                <tr><td style="width: 30%;"><b>Lokasi</b></td><td>${data.lokasi || '-'}</td></tr>
-                <tr><td><b>Tanggal Inspeksi</b></td><td>${formattedDate}</td></tr>
-            </table>`;
-            if(desc) html += `<p style="margin-bottom: 10px;">${desc}</p>`;
-        } else {
-            html += `<div style="text-align: center; font-weight: bold; margin-bottom: 20px;">${title}</div>`;
-            if(desc) html += `<p style="margin-bottom: 20px; text-align: justify;">${desc}</p>`;
+        let bkpDel = new Set(data[`deleted${prefix.charAt(0).toUpperCase() + prefix.slice(1)}s`] || []);
+        let bkpCount = data[`${prefix}Count`] || (prefix === 'detector' ? 1 : 0);
+
+        // Jika detector, paksa loop 1 kali
+        if (prefix === 'detector') {
+            bkpCount = 1;
+            bkpDel = new Set();
         }
 
-        html += `<table class="report-table">`;
-        
-        let aspectCol = prefix === 'detector' ? 'Aspek yang Diperiksa' : 'Item Pemeriksaan';
-        if(prefix === 'evakuasi') aspectCol = 'Bagian/indikator';
+        for (let j = 1; j <= bkpCount; j++) {
+            if (bkpDel.has(j)) continue;
 
-        html += `
-        <tr>
-            ${prefix === 'evakuasi' ? '' : '<th>No</th>'}
-            <th>${aspectCol}</th>
-            <th>Sesuai</th>
-            <th>Tidak Sesuai</th>
-            <th>Keterangan</th>
-            <th>Dokumentasi</th>
-        </tr>`;
+            const locText = prefix !== 'detector' && data[`${prefix}_${j}_lokasi`] 
+                ? data[`${prefix}_${j}_lokasi`] 
+                : (data.lokasi || '-');
 
-        list.forEach((item, idx) => {
-            const status = data[`${prefix}_${idx}_status`] || '';
-            const ket = data[`${prefix}_${idx}_keterangan`] || '';
-            const numStr = prefix === 'evakuasi' ? String.fromCharCode(97 + idx) + '.' : (idx + 1);
-            
-            let imgHtml = '';
-            const previewId = `${prefix}_${idx}_preview`;
-            const previewImg = document.getElementById(previewId);
-            if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
-                imgHtml = `<img src="${previewImg.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: block; margin: 0 auto;" />`;
-            } else if (data[`${prefix}_${idx}_foto_base64`]) {
-                imgHtml = `<img src="${data[`${prefix}_${idx}_foto_base64`]}" style="max-height: 80px; width: auto; border-radius: 4px; display: block; margin: 0 auto;" />`;
+            html += `<div style="page-break-after: always; margin-bottom: 30px;">`;
+            if(hasHeaderTable) {
+                if (j === 1) html += `<div style="text-align: center; font-weight: bold; margin-bottom: 20px;">HASIL INSPEKSI PROTEKSI PASIF</div>`;
+                html += `<table class="report-table">
+                    <tr><td colspan="2" style="text-align: center; font-weight: bold;">${title} ${prefix !== 'detector' ? j : ''}</td></tr>
+                    <tr><td style="width: 30%;"><b>Lokasi</b></td><td>${locText}</td></tr>
+                    <tr><td><b>Tanggal Inspeksi</b></td><td>${formattedDate}</td></tr>
+                </table>`;
+                if(desc) html += `<p style="margin-bottom: 10px;">${desc}</p>`;
+            } else {
+                html += `<div style="text-align: center; font-weight: bold; margin-bottom: 20px;">${title} ${prefix !== 'detector' ? j : ''}</div>`;
+                if(desc) html += `<p style="margin-bottom: 20px; text-align: justify;">${desc}</p>`;
+                if (prefix !== 'detector') {
+                    html += `<p style="margin-bottom: 10px;"><b>Lokasi:</b> ${locText}</p>`;
+                }
             }
+
+            html += `<table class="report-table">`;
+            
+            let aspectCol = prefix === 'detector' ? 'Aspek yang Diperiksa' : 'Item Pemeriksaan';
+            if(prefix === 'evakuasi') aspectCol = 'Bagian/indikator';
 
             html += `
             <tr>
-                ${prefix === 'evakuasi' ? '' : `<td style="text-align:center;">${numStr}</td>`}
-                <td>${prefix === 'evakuasi' ? numStr + ' ' : ''}${item}</td>
-                <td style="text-align:center;">${status==='Sesuai'?'✓':''}</td>
-                <td style="text-align:center;">${status==='Tidak Sesuai'?'✓':''}</td>
-                <td>${ket}</td>
-                <td style="text-align:center;">${imgHtml}</td>
+                ${prefix === 'evakuasi' ? '' : '<th>No</th>'}
+                <th>${aspectCol}</th>
+                <th>Sesuai</th>
+                <th>Tidak Sesuai</th>
+                <th>Keterangan</th>
+                <th>Dokumentasi</th>
             </tr>`;
-        });
-        html += `</table>`;
+
+            list.forEach((item, idx) => {
+                const keyPrefix = prefix === 'detector' ? `${prefix}_${idx}` : `${prefix}_${j}_item_${idx}`;
+                
+                const status = data[`${keyPrefix}_status`] || '';
+                const ket = data[`${keyPrefix}_keterangan`] || '';
+                const numStr = prefix === 'evakuasi' ? String.fromCharCode(97 + idx) + '.' : (idx + 1);
+                
+                let imgHtml = '';
+                if (Array.isArray(data[`${keyPrefix}_foto_base64`])) {
+                    imgHtml = data[`${keyPrefix}_foto_base64`].map(src => `<img src="${src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`).join('');
+                } else if (typeof data[`${keyPrefix}_foto_base64`] === 'string') {
+                    imgHtml = `<img src="${data[`${keyPrefix}_foto_base64`]}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`;
+                } else {
+                    const containerId = `${keyPrefix}_preview_container`;
+                    const container = document.getElementById(containerId);
+                    if (container && container.querySelectorAll('img').length > 0) {
+                        const imgs = Array.from(container.querySelectorAll('img'));
+                        imgHtml = imgs.map(img => `<img src="${img.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`).join('');
+                    } else {
+                        const previewId = `${keyPrefix}_preview`;
+                        const previewImg = document.getElementById(previewId);
+                        if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
+                            imgHtml = `<img src="${previewImg.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`;
+                        }
+                    }
+                }
+
+                html += `
+                <tr>
+                    ${prefix === 'evakuasi' ? '' : `<td style="text-align:center;">${numStr}</td>`}
+                    <td>${prefix === 'evakuasi' ? numStr + ' ' : ''}${item}</td>
+                    <td style="text-align:center;">${status==='Sesuai'?'✓':''}</td>
+                    <td style="text-align:center;">${status==='Tidak Sesuai'?'✓':''}</td>
+                    <td>${ket}</td>
+                    <td style="text-align:center;">${imgHtml}</td>
+                </tr>`;
+            });
+            html += `</table>`;
+            
+            // Render kesimpulan & rekomendasi di bawah tabel terakhir
+            if (j === bkpCount) {
+                const kesimpulan = data[`kesimpulan_${prefix}`];
+                const rekomendasi = data[`rekomendasi_${prefix}`];
+                if(kesimpulan || rekomendasi) {
+                    html += `<div style="padding-top: 10px;">`;
+                    if(kesimpulan) html += `<p style="font-weight:bold; margin-bottom:10px;">Kesimpulan:</p><div style="margin-bottom:20px; padding-left:20px;">${kesimpulan}</div>`;
+                    if(rekomendasi) html += `<p style="font-weight:bold; margin-bottom:10px;">Rekomendasi:</p><div style="margin-bottom:20px; padding-left:20px;">${rekomendasi}</div>`;
+                    html += `</div>`;
+                }
+            }
+            
+            html += `</div>`;
+        }
+    };
 
         const kesimpulan = data[`kesimpulan_${prefix}`];
         const rekomendasi = data[`rekomendasi_${prefix}`];
@@ -1288,7 +1468,6 @@ async function loadReport(id) {
         document.getElementById('apar-container').innerHTML = '';
         aparCount = 0;
         deletedApars.clear();
-        
         if (data.deletedApars) deletedApars = new Set(data.deletedApars);
         if (data.aparCount) {
             for (let i = 1; i <= data.aparCount; i++) {
@@ -1299,14 +1478,111 @@ async function loadReport(id) {
             addApar();
         }
 
+        // Hapus form pasif saat ini dan restore sesuai data load
+        const passiveTypes = [
+            { prefix: 'firealarm', count: 'firealarmCount', del: 'deletedFirealarms', title: 'Fire Alarm', varDel: deletedFirealarms },
+            { prefix: 'evakuasi', count: 'evakuasiCount', del: 'deletedEvakuasis', title: 'Jalur Evakuasi', varDel: deletedEvakuasis },
+            { prefix: 'pintudarurat', count: 'pintudaruratCount', del: 'deletedPintudarurats', title: 'Pintu Darurat', varDel: deletedPintudarurats },
+            { prefix: 'tanggadarurat', count: 'tanggadaruratCount', del: 'deletedTanggadarurats', title: 'Tangga Darurat', varDel: deletedTanggadarurats }
+        ];
+        
+        passiveTypes.forEach(pt => {
+            document.getElementById(`${pt.prefix}-checklist-container`).innerHTML = '';
+            
+            if (pt.prefix === 'firealarm') firealarmCount = 0;
+            else if (pt.prefix === 'evakuasi') evakuasiCount = 0;
+            else if (pt.prefix === 'pintudarurat') pintudaruratCount = 0;
+            else if (pt.prefix === 'tanggadarurat') tanggadaruratCount = 0;
+            
+            pt.varDel.clear();
+            
+            let bkpDel = new Set(data[pt.del] || []);
+            let bkpCount = data[pt.count] || 0;
+            
+            if (pt.prefix === 'firealarm') deletedFirealarms = bkpDel;
+            else if (pt.prefix === 'evakuasi') deletedEvakuasis = bkpDel;
+            else if (pt.prefix === 'pintudarurat') deletedPintudarurats = bkpDel;
+            else if (pt.prefix === 'tanggadarurat') deletedTanggadarurats = bkpDel;
+            
+            if (bkpCount > 0) {
+                for (let i = 1; i <= bkpCount; i++) {
+                    if (!bkpDel.has(i)) {
+                        addPassiveItem(pt.prefix, pt.title);
+                    } else {
+                        if (pt.prefix === 'firealarm') firealarmCount++;
+                        else if (pt.prefix === 'evakuasi') evakuasiCount++;
+                        else if (pt.prefix === 'pintudarurat') pintudaruratCount++;
+                        else if (pt.prefix === 'tanggadarurat') tanggadaruratCount++;
+                    }
+                }
+            } else {
+                addPassiveItem(pt.prefix, pt.title);
+            }
+        });
+
         for (const key in data) {
+            if (key.endsWith('_foto_base64')) {
+                const originalKey = key.replace('_foto_base64', '');
+                const previewContainerId = `${originalKey}_preview_container`;
+                const container = document.getElementById(previewContainerId);
+                
+                if (container && Array.isArray(data[key])) {
+                    container.innerHTML = '';
+                    data[key].forEach(base64Str => {
+                        const img = document.createElement('img');
+                        img.src = base64Str;
+                        img.className = "w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm";
+                        container.appendChild(img);
+                    });
+                }
+                continue;
+            }
+            
+            if (key.endsWith('_base64')) {
+                const originalKey = key.replace('_base64', '');
+                const previewContainerId = `${originalKey}_preview_container`;
+                const container = document.getElementById(previewContainerId);
+                if (container && typeof data[key] === 'string') {
+                    container.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = data[key];
+                    img.className = "w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm";
+                    container.appendChild(img);
+                } else {
+                    const previewId = originalKey.replace('_foto', '_preview');
+                    const previewImg = document.getElementById(previewId);
+                    if (previewImg) {
+                        previewImg.src = data[key];
+                        previewImg.classList.remove('hidden');
+                    }
+                }
+                continue;
+            }
+
             const element = document.querySelector(`[name="${key}"]`);
             if (element) {
                 if (element.type === 'radio' || element.type === 'checkbox') {
-                    const el = document.querySelector(`[name="${key}"][value="${data[key]}"]`);
-                    if(el) el.checked = true;
+                    const el = document.querySelector(`[name="${key}"][value="${data[key]}"]`) || 
+                               document.querySelector(`[name="${key}"]`);
+                               
+                    if (element.type === 'checkbox') {
+                        element.checked = !!data[key];
+                        if (element.onchange) {
+                            element.dispatchEvent(new Event('change'));
+                        }
+                    } else if (el && el.type === 'radio') {
+                        el.checked = true;
+                    }
                 } else if (element.type !== 'file') {
                     element.value = data[key];
+                }
+            }
+            
+            if (key.includes('_keterangan')) {
+                const ketInput = document.querySelector(`input[name="${key}"]`);
+                if (ketInput) {
+                    ketInput.value = data[key];
+                    ketInput.dataset.auto = "false";
                 }
             }
             
@@ -1316,18 +1592,7 @@ async function loadReport(id) {
                     window.quillEditors[key].root.innerHTML = data[key];
                 }
             }
-
-            // Restore image previews from base64
-            if (key.endsWith('_base64')) {
-                const previewId = key.replace('_foto_base64', '_preview');
-                const previewImg = document.getElementById(previewId);
-                if (previewImg && data[key]) {
-                    previewImg.src = data[key];
-                    previewImg.classList.remove('hidden');
-                }
-            }
         }
-        
         for(let i=1; i<=aparCount; i++) {
             if(!deletedApars.has(i)) updateAparScore(i);
         }
@@ -1474,14 +1739,36 @@ async function generateWithGemini(section, type) {
                 aparItems.push(`APAR ${i}:\n${itemDetails.join('\n')}`);
             }
             dataContext += aparItems.join('\n\n');
-        } else {
+        } else if (section === 'detector') {
             const items = [];
-            for (let j = 0; j < checklists[section].length; j++) {
-                const status = document.querySelector(`input[name="${section}_${j}_status"]:checked`)?.value || 'Belum Diinspeksi';
-                const ket = document.querySelector(`input[name="${section}_${j}_keterangan"]`)?.value || '-';
-                items.push(`- ${checklists[section][j]}: ${status} (Keterangan: ${ket})`);
+            for (let j = 0; j < checklists.detector.length; j++) {
+                const status = document.querySelector(`input[name="detector_${j}_status"]:checked`)?.value || 'Belum Diinspeksi';
+                const ket = document.querySelector(`input[name="detector_${j}_keterangan"]`)?.value || '-';
+                items.push(`- ${checklists.detector[j]}: ${status} (Keterangan: ${ket})`);
             }
             dataContext += items.join('\n');
+        } else {
+            const countMap = { firealarm: firealarmCount, evakuasi: evakuasiCount, pintudarurat: pintudaruratCount, tanggadarurat: tanggadaruratCount };
+            const delMap = { firealarm: deletedFirealarms, evakuasi: deletedEvakuasis, pintudarurat: deletedPintudarurats, tanggadarurat: deletedTanggadarurats };
+            
+            const bkpCount = countMap[section];
+            const bkpDel = delMap[section];
+            
+            const pItems = [];
+            for (let i = 1; i <= bkpCount; i++) {
+                if (bkpDel.has(i)) continue;
+                let itemDetails = [];
+                const loc = document.querySelector(`input[name="${section}_${i}_lokasi"]`)?.value || '-';
+                itemDetails.push(`Lokasi Spesifik: ${loc}`);
+                
+                for (let j = 0; j < checklists[section].length; j++) {
+                    const status = document.querySelector(`input[name="${section}_${i}_item_${j}_status"]:checked`)?.value || 'Belum Diinspeksi';
+                    const ket = document.querySelector(`input[name="${section}_${i}_item_${j}_keterangan"]`)?.value || '-';
+                    itemDetails.push(`- ${checklists[section][j]}: ${status} (Keterangan: ${ket})`);
+                }
+                pItems.push(`${section.toUpperCase()} ${i}:\n${itemDetails.join('\n')}`);
+            }
+            dataContext += pItems.join('\n\n');
         }
 
         let sysPrompt = `Anda adalah seorang ahli K3. Tugas Anda HANYA membuat ${type.toUpperCase()} untuk inspeksi ${section.toUpperCase()} berdasarkan Data Inspeksi. 
@@ -1678,17 +1965,31 @@ function getFormDataForBackup() {
     // Convert files to base64 immediately for backup
     for (let key in data) {
         if (data[key] instanceof File) {
-            const previewId = key.replace('_foto', '_preview');
-            const previewImg = document.getElementById(previewId);
-            if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
-                data[key + '_base64'] = previewImg.src;
-            }
             delete data[key];
         }
     }
     
+    // Ambil semua foto dari kontainer preview
+    const previewContainers = document.querySelectorAll('[id$="_preview_container"]');
+    previewContainers.forEach(container => {
+        const imgs = container.querySelectorAll('img');
+        const keyBase = container.id.replace('_preview_container', '');
+        if (imgs.length > 0) {
+            data[keyBase + '_foto_base64'] = Array.from(imgs).map(img => img.src);
+        }
+    });
+    
     data.aparCount = aparCount;
     data.deletedApars = Array.from(deletedApars);
+    
+    data.firealarmCount = firealarmCount;
+    data.deletedFirealarms = Array.from(deletedFirealarms);
+    data.evakuasiCount = evakuasiCount;
+    data.deletedEvakuasis = Array.from(deletedEvakuasis);
+    data.pintudaruratCount = pintudaruratCount;
+    data.deletedPintudarurats = Array.from(deletedPintudarurats);
+    data.tanggadaruratCount = tanggadaruratCount;
+    data.deletedTanggadarurats = Array.from(deletedTanggadarurats);
     if (!data.report_id && currentDocId) data.report_id = currentDocId;
     else if (!data.report_id) data.report_id = Date.now().toString();
     
@@ -1751,8 +2052,7 @@ function importBackup(event) {
             document.getElementById('apar-container').innerHTML = '';
             aparCount = 0;
             deletedApars.clear();
-            
-            if (data.deletedApars) deletedApars = new Set(data.deletedApars);
+               if (data.deletedApars) deletedApars = new Set(data.deletedApars);
             if (data.aparCount) {
                 for (let i = 1; i <= data.aparCount; i++) {
                     if(!deletedApars.has(i)) addApar();
@@ -1761,16 +2061,89 @@ function importBackup(event) {
             } else {
                 addApar();
             }
+            
+            // Hapus form pasif saat ini dan restore sesuai backup
+            const passiveTypes = [
+                { prefix: 'firealarm', count: 'firealarmCount', del: 'deletedFirealarms', title: 'Fire Alarm', varDel: deletedFirealarms },
+                { prefix: 'evakuasi', count: 'evakuasiCount', del: 'deletedEvakuasis', title: 'Jalur Evakuasi', varDel: deletedEvakuasis },
+                { prefix: 'pintudarurat', count: 'pintudaruratCount', del: 'deletedPintudarurats', title: 'Pintu Darurat', varDel: deletedPintudarurats },
+                { prefix: 'tanggadarurat', count: 'tanggadaruratCount', del: 'deletedTanggadarurats', title: 'Tangga Darurat', varDel: deletedTanggadarurats }
+            ];
+            
+            passiveTypes.forEach(pt => {
+                document.getElementById(`${pt.prefix}-checklist-container`).innerHTML = '';
+                
+                // Reset global counters via a quick hack: since we don't have a setter, we just overwrite them in window.
+                if (pt.prefix === 'firealarm') firealarmCount = 0;
+                else if (pt.prefix === 'evakuasi') evakuasiCount = 0;
+                else if (pt.prefix === 'pintudarurat') pintudaruratCount = 0;
+                else if (pt.prefix === 'tanggadarurat') tanggadaruratCount = 0;
+                
+                pt.varDel.clear();
+                
+                let bkpDel = new Set(data[pt.del] || []);
+                let bkpCount = data[pt.count] || 0;
+                
+                if (pt.prefix === 'firealarm') deletedFirealarms = bkpDel;
+                else if (pt.prefix === 'evakuasi') deletedEvakuasis = bkpDel;
+                else if (pt.prefix === 'pintudarurat') deletedPintudarurats = bkpDel;
+                else if (pt.prefix === 'tanggadarurat') deletedTanggadarurats = bkpDel;
+                
+                if (bkpCount > 0) {
+                    for (let i = 1; i <= bkpCount; i++) {
+                        if (!bkpDel.has(i)) {
+                            addPassiveItem(pt.prefix, pt.title);
+                        } else {
+                            if (pt.prefix === 'firealarm') firealarmCount++;
+                            else if (pt.prefix === 'evakuasi') evakuasiCount++;
+                            else if (pt.prefix === 'pintudarurat') pintudaruratCount++;
+                            else if (pt.prefix === 'tanggadarurat') tanggadaruratCount++;
+                        }
+                    }
+                } else {
+                    addPassiveItem(pt.prefix, pt.title);
+                }
+            });
 
+            // Iterate dan isi nilainya
             for (const key in data) {
+                if (key.endsWith('_foto_base64')) {
+                    // Restore image array ke container
+                    const originalKey = key.replace('_foto_base64', '');
+                    const previewContainerId = `${originalKey}_preview_container`;
+                    const container = document.getElementById(previewContainerId);
+                    
+                    if (container && Array.isArray(data[key])) {
+                        container.innerHTML = ''; // Bersihkan
+                        data[key].forEach(base64Str => {
+                            const img = document.createElement('img');
+                            img.src = base64Str;
+                            img.className = "w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm";
+                            container.appendChild(img);
+                        });
+                    }
+                    continue;
+                }
+                
                 if (key.endsWith('_base64')) {
-                    // Restore image preview
+                    // Backward compatibility untuk file lama yang base64-nya string
                     const originalKey = key.replace('_base64', '');
-                    const previewId = originalKey.replace('_foto', '_preview');
-                    const previewImg = document.getElementById(previewId);
-                    if (previewImg) {
-                        previewImg.src = data[key];
-                        previewImg.classList.remove('hidden');
+                    const previewContainerId = `${originalKey}_preview_container`;
+                    const container = document.getElementById(previewContainerId);
+                    if (container && typeof data[key] === 'string') {
+                        container.innerHTML = '';
+                        const img = document.createElement('img');
+                        img.src = data[key];
+                        img.className = "w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm";
+                        container.appendChild(img);
+                    } else {
+                        // Fallback jika id nya beneran _preview tunggal (untuk detector yg msh belum multiple)
+                        const previewId = originalKey.replace('_foto', '_preview');
+                        const previewImg = document.getElementById(previewId);
+                        if (previewImg) {
+                            previewImg.src = data[key];
+                            previewImg.classList.remove('hidden');
+                        }
                     }
                     continue;
                 }
