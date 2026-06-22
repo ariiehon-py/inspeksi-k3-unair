@@ -698,6 +698,14 @@ function showPreview(input, previewId) {
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                 preview.src = dataUrl;
                 preview.classList.remove('hidden');
+                
+                // OTOMATIS DOWNLOAD FOTO SEBAGAI BACKUP KE HP
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `Backup_Foto_${previewId}_${Date.now()}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             };
             img.src = e.target.result;
         }
@@ -1766,14 +1774,34 @@ function importBackup(event) {
                     }
                     continue;
                 }
-                
                 const element = document.querySelector(`[name="${key}"]`);
                 if (element) {
                     if (element.type === 'radio' || element.type === 'checkbox') {
-                        const el = document.querySelector(`[name="${key}"][value="${data[key]}"]`);
-                        if(el) el.checked = true;
+                        // Khusus radio/checkbox, cari elemen spesifik dengan value tersebut
+                        // Tangani kasus value boolean/number yang mungkin dikonversi ke string
+                        const el = document.querySelector(`[name="${key}"][value="${data[key]}"]`) || 
+                                   document.querySelector(`[name="${key}"]`); 
+                        
+                        if (element.type === 'checkbox') {
+                            element.checked = !!data[key]; // Restore state checkbox tunggal seperti no_tanggadarurat
+                            // Jika ini checkbox toggle section, trigger change event agar UI update
+                            if (element.onchange) {
+                                element.dispatchEvent(new Event('change'));
+                            }
+                        } else if (el && el.type === 'radio') {
+                            el.checked = true;
+                        }
                     } else if (element.type !== 'file') {
                         element.value = data[key];
+                    }
+                }
+                
+                // Set text input khusus untuk keterangan
+                if (key.includes('_keterangan')) {
+                    const ketInput = document.querySelector(`input[name="${key}"]`);
+                    if (ketInput) {
+                        ketInput.value = data[key];
+                        ketInput.dataset.auto = "false";
                     }
                 }
                 
