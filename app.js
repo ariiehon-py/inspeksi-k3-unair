@@ -428,9 +428,138 @@ async function updateDashboardOverview() {
         countPassive('tanggadarurat', checklists.tanggadarurat);
     });
     
-    // The previous chart and stats (dash-tot-fakultas, dash-tot-apar, dashboardChart)
-    // have been removed in the UI in favor of a CSS-only chart and minimalist cards.
-    // dash-tot-laporan and dash-tot-draf are updated at the beginning of the function.
+    const labels = [];
+    const dataSesuai = [];
+    const dataTidakSesuai = [];
+    
+    let globalSesuai = 0;
+    let globalTotal = 0;
+    
+    for(const fak in statsByFak) {
+        labels.push(fak.replace('Fakultas ', '').replace('Sekolah ', ''));
+        const s = statsByFak[fak];
+        
+        globalSesuai += s.sesuai;
+        globalTotal += s.total;
+        
+        dataSesuai.push(s.sesuai);
+        dataTidakSesuai.push(s.total - s.sesuai);
+    }
+    
+    // Pattern generation for hatched bars
+    const createStripePattern = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 10;
+        canvas.height = 10;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 10, 10);
+        ctx.strokeStyle = '#d1d5db'; // gray-300
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 10); ctx.lineTo(10, 0);
+        ctx.moveTo(-5, 5); ctx.lineTo(5, -5);
+        ctx.moveTo(5, 15); ctx.lineTo(15, 5);
+        ctx.stroke();
+        return ctx.createPattern(canvas, 'repeat');
+    };
+
+    const barCtx = document.getElementById('barChart');
+    if (barCtx) {
+        if(window.dashboardBarChart) window.dashboardBarChart.destroy();
+        
+        window.dashboardBarChart = new Chart(barCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels.length > 0 ? labels : ['Belum Ada Data'],
+                datasets: [
+                    {
+                        label: 'Sesuai',
+                        data: labels.length > 0 ? dataSesuai : [0],
+                        backgroundColor: '#111827', // gray-900 (black)
+                        borderRadius: 4,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.8
+                    },
+                    {
+                        label: 'Tidak Sesuai',
+                        data: labels.length > 0 ? dataTidakSesuai : [0],
+                        backgroundColor: createStripePattern(),
+                        borderColor: '#e5e7eb', // gray-200
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.8
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#111827',
+                        padding: 12,
+                        titleFont: { size: 13, weight: 'bold' },
+                        bodyFont: { size: 12 },
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, border: { display: false } },
+                    y: { border: { display: false }, ticks: { stepSize: 5 } }
+                }
+            }
+        });
+    }
+
+    const gaugeCtx = document.getElementById('gaugeChart');
+    const gaugePct = document.getElementById('gauge-percentage');
+    
+    if (gaugeCtx && gaugePct) {
+        if(window.dashboardGaugeChart) window.dashboardGaugeChart.destroy();
+        
+        const pct = globalTotal > 0 ? Math.round((globalSesuai / globalTotal) * 100) : 0;
+        gaugePct.innerText = pct + '%';
+        
+        // Create 50 segments for the gauge
+        const segments = 50;
+        const ticksData = Array(segments).fill(1);
+        const ticksColors = ticksData.map((_, i) => {
+            const currentPct = (i / segments) * 100;
+            return currentPct < pct ? '#111827' : '#e5e7eb';
+        });
+        
+        window.dashboardGaugeChart = new Chart(gaugeCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ticksData.map(()=>''),
+                datasets: [{
+                    data: ticksData,
+                    backgroundColor: ticksColors,
+                    borderWidth: 2,
+                    borderColor: '#f9f9f8', // match container background
+                    hoverBorderColor: '#f9f9f8',
+                    hoverBackgroundColor: ticksColors,
+                    circumference: 180,
+                    rotation: 270
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '80%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                layout: {
+                    padding: { bottom: 10 }
+                }
+            }
+        });
+    }
 }
 
 function startInspection() {

@@ -159,78 +159,38 @@
                     </div>
 
                     <!-- OVERVIEW GRAPH & STATS -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-                        <!-- Chart Area -->
-                        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex flex-col">
-                            <h3 class="text-xs font-bold text-gray-400 tracking-wider uppercase mb-8">Aktivitas Inspeksi (Simulasi)</h3>
-                            <div class="flex-1 flex items-end gap-2 sm:gap-4 h-48">
-                                <div class="flex-1 flex flex-col justify-end items-center group">
-                                    <div class="w-full bg-gray-100 group-hover:bg-gray-200 transition-colors rounded-t-sm relative" style="height: 30%">
-                                        <div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded font-bold transition-opacity z-10 pointer-events-none">3</div>
-                                    </div>
-                                    <span class="text-[10px] text-gray-400 mt-3 font-bold uppercase tracking-widest">Jan</span>
-                                </div>
-                                <div class="flex-1 flex flex-col justify-end items-center group">
-                                    <div class="w-full bg-gray-100 group-hover:bg-gray-200 transition-colors rounded-t-sm relative" style="height: 50%">
-                                        <div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded font-bold transition-opacity z-10 pointer-events-none">5</div>
-                                    </div>
-                                    <span class="text-[10px] text-gray-400 mt-3 font-bold uppercase tracking-widest">Feb</span>
-                                </div>
-                                <div class="flex-1 flex flex-col justify-end items-center group">
-                                    <div class="w-full bg-gray-100 group-hover:bg-gray-200 transition-colors rounded-t-sm relative" style="height: 20%">
-                                        <div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded font-bold transition-opacity z-10 pointer-events-none">2</div>
-                                    </div>
-                                    <span class="text-[10px] text-gray-400 mt-3 font-bold uppercase tracking-widest">Mar</span>
-                                </div>
-                                <div class="flex-1 flex flex-col justify-end items-center group">
-                                    <div class="w-full bg-gray-100 group-hover:bg-gray-200 transition-colors rounded-t-sm relative" style="height: 70%">
-                                        <div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded font-bold transition-opacity z-10 pointer-events-none">7</div>
-                                    </div>
-                                    <span class="text-[10px] text-gray-400 mt-3 font-bold uppercase tracking-widest">Apr</span>
-                                </div>
-                                <div class="flex-1 flex flex-col justify-end items-center group">
-                                    <div class="w-full bg-gray-900 transition-colors rounded-t-sm relative" style="height: 90%">
-                                        <div class="opacity-100 absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded font-bold transition-opacity z-10 pointer-events-none">9</div>
-                                    </div>
-                                    <span class="text-[10px] text-gray-900 mt-3 font-bold uppercase tracking-widest">Mei</span>
-                                </div>
-                                <div class="flex-1 flex flex-col justify-end items-center group">
-                                    <div class="w-full bg-gray-100 group-hover:bg-gray-200 transition-colors rounded-t-sm relative" style="height: 40%">
-                                        <div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded font-bold transition-opacity z-10 pointer-events-none">4</div>
-                                    </div>
-                                    <span class="text-[10px] text-gray-400 mt-3 font-bold uppercase tracking-widest">Jun</span>
-                                </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+                        <!-- Bar Chart -->
+                        <div class="lg:col-span-6 bg-[#f9f9f8] p-6 rounded-2xl border border-gray-100 flex flex-col h-72">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4 tracking-tight">Statistik Kepatuhan</h3>
+                            <div class="flex-1 relative w-full h-full">
+                                <canvas id="barChart"></canvas>
                             </div>
                         </div>
                         
-                        <!-- Stats Area -->
-                        <div class="flex flex-col gap-4">
-                            <!-- Stat 1 -->
-                            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex items-center justify-between">
-                                <div>
-                                    <p class="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-1">Total Laporan</p>
-                                    <h4 class="text-4xl font-black text-gray-900" id="dash-tot-laporan">0</h4>
+                        <!-- Gauge Chart -->
+                        <div class="lg:col-span-3 bg-[#f9f9f8] p-6 rounded-2xl border border-gray-100 flex flex-col items-center justify-center h-72 relative">
+                            <div class="w-full h-full relative flex items-center justify-center">
+                                <canvas id="gaugeChart"></canvas>
+                                <div class="absolute inset-0 flex flex-col items-center justify-end pb-8 pointer-events-none">
+                                    <h2 class="text-4xl font-black text-gray-900" id="gauge-percentage">0%</h2>
+                                    <p class="text-xs text-gray-600 font-medium mt-1">Total Sesuai</p>
                                 </div>
-                                <i class="fa-solid fa-file-contract text-gray-200 text-4xl"></i>
+                            </div>
+                        </div>
+
+                        <!-- Stats Area -->
+                        <div class="lg:col-span-3 flex flex-col gap-4 h-72">
+                            <!-- Stat 1 -->
+                            <div class="bg-[#f9f9f8] p-6 rounded-2xl border border-gray-100 flex-1 flex flex-col justify-center items-start group">
+                                <h4 class="text-4xl font-black text-gray-900 mb-2" id="dash-tot-laporan">0</h4>
+                                <p class="text-xs text-gray-600 font-medium leading-tight group-hover:text-gray-900 transition-colors">Total laporan<br>inspeksi <i class="fa-solid fa-arrow-right ml-1 opacity-0 group-hover:opacity-100 transition-opacity"></i></p>
                             </div>
                             <!-- Stat 2 -->
-                            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] flex items-center justify-between">
-                                <div>
-                                    <p class="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-1">Draf Tersimpan</p>
-                                    <h4 class="text-4xl font-black text-gray-900" id="dash-tot-draf">0</h4>
-                                </div>
-                                <i class="fa-solid fa-file-pen text-gray-200 text-4xl"></i>
+                            <div class="bg-[#f9f9f8] p-6 rounded-2xl border border-gray-100 flex-1 flex flex-col justify-center items-start group">
+                                <h4 class="text-4xl font-black text-gray-900 mb-2" id="dash-tot-draf">0</h4>
+                                <p class="text-xs text-gray-600 font-medium leading-tight group-hover:text-gray-900 transition-colors">Draf tersimpan<br>di memori <i class="fa-solid fa-arrow-right ml-1 opacity-0 group-hover:opacity-100 transition-opacity"></i></p>
                             </div>
-                            <!-- Action -->
-                            <button onclick="startNewInspection()" class="w-full p-6 bg-gray-900 hover:bg-black text-white rounded-2xl shadow-md transition-colors flex items-center justify-between group">
-                                <div class="text-left">
-                                    <p class="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-1">Aksi Cepat</p>
-                                    <h4 class="text-lg font-bold">Mulai Inspeksi</h4>
-                                </div>
-                                <div class="w-10 h-10 rounded-full border border-gray-700 group-hover:border-white flex items-center justify-center transition-colors">
-                                    <i class="fa-solid fa-arrow-right"></i>
-                                </div>
-                            </button>
                         </div>
                     </div>
 
@@ -694,6 +654,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
     <!-- Application Script -->
-    <script src="app.js?v=8"></script>
+    <script src="app.js?v=9"></script>
 </body>
 </html>
