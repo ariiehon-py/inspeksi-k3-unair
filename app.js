@@ -195,20 +195,23 @@ function updateSidebarActive(activeId) {
 }
 
 function showDashboard() {
-    const userName = localStorage.getItem('k3_user_name') || 'Surveyor';
-    const welcomeText = document.getElementById('welcome-text');
-    if (welcomeText) welcomeText.innerText = `Hi, ${userName}!`;
+    try {
+        const userName = localStorage.getItem('k3_user_name') || 'Surveyor';
+        const welcomeText = document.getElementById('welcome-text');
+        if (welcomeText) welcomeText.innerText = `Hi, ${userName}!`;
 
-    document.getElementById('login-view').classList.add('hidden');
-    document.getElementById('app-view').classList.remove('hidden');
-    document.getElementById('dashboard-view').classList.remove('hidden');
-    document.getElementById('form-view').classList.add('hidden');
-    document.getElementById('riwayat-view').classList.add('hidden');
-    document.getElementById('statistik-view').classList.add('hidden');
-    
-    updateSidebarActive('nav-dashboard');
-    updateDashboardOverview();
-    renderDashboardRiwayat();
+        document.getElementById('login-view').classList.add('hidden');
+        document.getElementById('app-view').classList.remove('hidden');
+        document.getElementById('form-view').classList.add('hidden');
+        document.getElementById('riwayat-view').classList.add('hidden');
+        document.getElementById('statistik-view').classList.add('hidden');
+        document.getElementById('dashboard-view').classList.remove('hidden');
+        
+        updateSidebarActive('nav-dashboard');
+        
+        updateDashboardOverview();
+        renderDashboardRiwayat();
+    } catch(e) { alert("Error showDashboard: " + e.message); console.error(e); }
 }
 
 async function renderDashboardRiwayat() {
@@ -563,35 +566,41 @@ async function updateDashboardOverview() {
 }
 
 function startInspection() {
-    document.getElementById('dashboard-view').classList.add('hidden');
-    document.getElementById('riwayat-view').classList.add('hidden');
-    document.getElementById('statistik-view').classList.add('hidden');
-    document.getElementById('form-view').classList.remove('hidden');
-    window.scrollTo(0, 0);
+    try {
+        document.getElementById('dashboard-view').classList.add('hidden');
+        document.getElementById('riwayat-view').classList.add('hidden');
+        document.getElementById('statistik-view').classList.add('hidden');
+        document.getElementById('form-view').classList.remove('hidden');
+        window.scrollTo(0, 0);
+    } catch(e) { alert("Error startInspection: " + e.message); console.error(e); }
 }
 
 function showRiwayat() {
-    document.getElementById('login-view').classList.add('hidden');
-    document.getElementById('app-view').classList.remove('hidden');
-    document.getElementById('dashboard-view').classList.add('hidden');
-    document.getElementById('form-view').classList.add('hidden');
-    document.getElementById('riwayat-view').classList.remove('hidden');
-    document.getElementById('statistik-view').classList.add('hidden');
-    
-    updateSidebarActive('nav-riwayat');
-    renderRiwayat();
+    try {
+        document.getElementById('login-view').classList.add('hidden');
+        document.getElementById('app-view').classList.remove('hidden');
+        document.getElementById('dashboard-view').classList.add('hidden');
+        document.getElementById('form-view').classList.add('hidden');
+        document.getElementById('riwayat-view').classList.remove('hidden');
+        document.getElementById('statistik-view').classList.add('hidden');
+        
+        updateSidebarActive('nav-riwayat');
+        renderRiwayat();
+    } catch(e) { alert("Error showRiwayat: " + e.message); console.error(e); }
 }
 
 function showStatistik() {
-    document.getElementById('login-view').classList.add('hidden');
-    document.getElementById('app-view').classList.remove('hidden');
-    document.getElementById('dashboard-view').classList.add('hidden');
-    document.getElementById('form-view').classList.add('hidden');
-    document.getElementById('riwayat-view').classList.add('hidden');
-    document.getElementById('statistik-view').classList.remove('hidden');
-    
-    updateSidebarActive('nav-statistik');
-    renderStatistik();
+    try {
+        document.getElementById('login-view').classList.add('hidden');
+        document.getElementById('app-view').classList.remove('hidden');
+        document.getElementById('dashboard-view').classList.add('hidden');
+        document.getElementById('form-view').classList.add('hidden');
+        document.getElementById('riwayat-view').classList.add('hidden');
+        document.getElementById('statistik-view').classList.remove('hidden');
+        
+        updateSidebarActive('nav-statistik');
+        renderStatistik();
+    } catch(e) { alert("Error showStatistik: " + e.message); console.error(e); }
 }
 
 
