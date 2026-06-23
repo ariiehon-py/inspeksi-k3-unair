@@ -10,6 +10,8 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const storage = firebase.storage();
+const FieldValue = firebase.firestore.FieldValue;
 
 // Disable Firebase Persistence agar save lokal sepenuhnya dikendalikan manual
 // db.enablePersistence({ synchronizeTabs: true }).catch(err => {
@@ -976,6 +978,116 @@ function toggleSection(cbId, containerId) {
 
 // Removed obsolete toggleRekomendasi functions
 
+function isDataUrl(src) {
+    return typeof src === 'string' && src.startsWith('data:image');
+}
+
+function dataUrlToBlob(dataUrl) {
+    const parts = dataUrl.split(',');
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const bstr = atob(parts[1]);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+    return new Blob([u8arr], { type: mime });
+}
+
+function getPhotoSourcesFromData(data, keyPrefix) {
+    const sources = data[`${keyPrefix}_foto_urls`] || data[`${keyPrefix}_foto_base64`];
+    if (!sources) return null;
+    if (Array.isArray(sources)) return sources;
+    if (typeof sources === 'string') return [sources];
+    return null;
+}
+
+function buildPhotoImgHtml(sources) {
+    if (!sources || sources.length === 0) return '';
+    const style = 'max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;';
+    return sources.map(src => `<img src="${src}" style="${style}" />`).join('');
+}
+
+function getPhotoImgHtmlForExport(data, keyPrefix) {
+    const sources = getPhotoSourcesFromData(data, keyPrefix);
+    if (sources) return buildPhotoImgHtml(sources);
+
+    const container = document.getElementById(`${keyPrefix}_preview_container`);
+    if (container && container.querySelectorAll('img').length > 0) {
+        return buildPhotoImgHtml(Array.from(container.querySelectorAll('img')).map(img => img.src));
+    }
+
+    const previewImg = document.getElementById(`${keyPrefix}_preview`);
+    if (previewImg && previewImg.src && (previewImg.src.startsWith('data:image') || previewImg.src.startsWith('http'))) {
+        return buildPhotoImgHtml([previewImg.src]);
+    }
+    return '';
+}
+
+function restorePhotosFromData(data) {
+    const photoKeys = new Set();
+    for (const key in data) {
+        if (key.endsWith('_foto_urls') || key.endsWith('_foto_base64')) {
+            photoKeys.add(key.replace(/_foto_(urls|base64)$/, ''));
+        }
+    }
+
+    photoKeys.forEach(originalKey => {
+        const container = document.getElementById(`${originalKey}_preview_container`);
+        if (!container) return;
+
+        const sources = getPhotoSourcesFromData(data, originalKey);
+        if (!sources) return;
+
+        container.innerHTML = '';
+        sources.forEach(src => {
+            const img = document.createElement('img');
+            img.src = src;
+            img.className = "w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm";
+            container.appendChild(img);
+        });
+    });
+}
+
+async function uploadPhotosForSave(data, docId, onProgress) {
+    const previewContainers = document.querySelectorAll('[id$="_preview_container"]');
+    let uploaded = 0;
+    let totalNew = 0;
+
+    previewContainers.forEach(container => {
+        totalNew += Array.from(container.querySelectorAll('img')).filter(img => isDataUrl(img.src)).length;
+    });
+
+    for (const container of previewContainers) {
+        const imgs = container.querySelectorAll('img');
+        const keyBase = container.id.replace('_preview_container', '');
+        if (imgs.length === 0) continue;
+
+        const urls = [];
+        for (let i = 0; i < imgs.length; i++) {
+            const src = imgs[i].src;
+            if (isDataUrl(src)) {
+                uploaded++;
+                if (onProgress) onProgress(uploaded, totalNew);
+                const blob = dataUrlToBlob(src);
+                const ref = storage.ref(`reports/${docId}/${keyBase}_${i}_${Date.now()}.jpg`);
+                const snapshot = await ref.put(blob, { contentType: 'image/jpeg' });
+                const url = await snapshot.ref.getDownloadURL();
+                urls.push(url);
+                imgs[i].src = url;
+            } else {
+                urls.push(src);
+            }
+        }
+
+        data[`${keyBase}_foto_urls`] = urls;
+        data[`${keyBase}_foto_base64`] = FieldValue.delete();
+    }
+
+    for (const key in data) {
+        if (key.endsWith('_foto_base64') && !(data[key] instanceof File)) {
+            data[key] = FieldValue.delete();
+        }
+    }
+}
+
 function showPreviews(input, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -1050,23 +1162,12 @@ async function saveToFirestore(statusStr, showAlert = true) {
     
     for (let key in data) {
         if (data[key] instanceof File) {
-            delete data[key]; // Hapus file object
+            delete data[key];
         }
     }
-    
-    // Ambil semua foto dari kontainer preview
-    const previewContainers = document.querySelectorAll('[id$="_preview_container"]');
-    previewContainers.forEach(container => {
-        const imgs = container.querySelectorAll('img');
-        const keyBase = container.id.replace('_preview_container', ''); // apar_1_item_0
-        if (imgs.length > 0) {
-            data[keyBase + '_foto_base64'] = Array.from(imgs).map(img => img.src);
-        }
-    });
-    
+
     data.aparCount = aparCount;
     data.deletedApars = Array.from(deletedApars);
-    
     data.firealarmCount = firealarmCount;
     data.deletedFirealarms = Array.from(deletedFirealarms);
     data.evakuasiCount = evakuasiCount;
@@ -1075,13 +1176,7 @@ async function saveToFirestore(statusStr, showAlert = true) {
     data.deletedPintudarurats = Array.from(deletedPintudarurats);
     data.tanggadaruratCount = tanggadaruratCount;
     data.deletedTanggadarurats = Array.from(deletedTanggadarurats);
-    
     data.status = statusStr;
-    
-    // Jangan menimpa report_id jika sudah ada, buat baru HANYA JIKA belum punya ID (inspeksi baru)
-    if (!currentDocId || !data.report_id) {
-        data.report_id = Date.now().toString();
-    }
     
     try {
         let docRef;
@@ -1091,11 +1186,28 @@ async function saveToFirestore(statusStr, showAlert = true) {
             docRef = db.collection('reports').doc();
             currentDocId = docRef.id;
         }
-        
-        // Timeout 10 detik untuk simulasi network error atau server down
+
+        if (!data.report_id) {
+            data.report_id = Date.now().toString();
+        }
+
+        const updateSaveBtn = (text) => {
+            if (btnSave) btnSave.innerHTML = text;
+        };
+
+        updateSaveBtn('<i class="fa-solid fa-spinner fa-spin mr-1"></i> Mengunggah foto...');
+        await uploadPhotosForSave(data, currentDocId, (done, total) => {
+            if (total > 0) updateSaveBtn(`<i class="fa-solid fa-spinner fa-spin mr-1"></i> Foto ${done}/${total}...`);
+        });
+
+        updateSaveBtn('Menyimpan...');
+
+        const photoCount = document.querySelectorAll('[id$="_preview_container"] img').length;
+        const timeoutMs = Math.min(300000, 30000 + photoCount * 8000);
+
         const savePromise = docRef.set(data, {merge: true});
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('TIMEOUT_NO_INTERNET')), 10000);
+            setTimeout(() => reject(new Error('TIMEOUT_NO_INTERNET')), timeoutMs);
         });
         
         await Promise.race([savePromise, timeoutPromise]);
@@ -1112,7 +1224,13 @@ async function saveToFirestore(statusStr, showAlert = true) {
         
         if(showAlert) {
             setTimeout(() => {
-                alert('Gagal terhubung ke server! Koneksi internet bermasalah. Silakan scroll ke bawah dan gunakan fitur "Save Local" atau "Download Backup" untuk menyelamatkan data Anda.');
+                if (err.code === 'storage/unauthorized' || err.code === 'storage/unauthenticated') {
+                    alert('Gagal mengunggah foto: Firebase Storage belum diizinkan. Hubungi admin untuk mengatur Storage Rules di Firebase Console.');
+                } else if (err.message === 'TIMEOUT_NO_INTERNET') {
+                    alert('Gagal terhubung ke server! Koneksi internet bermasalah atau upload terlalu lama. Silakan scroll ke bawah dan gunakan fitur "Save Local" atau "Download Backup" untuk menyelamatkan data Anda.');
+                } else {
+                    alert('Gagal menyimpan data: ' + (err.message || 'Error tidak diketahui') + '. Gunakan "Download Backup" sebagai cadangan.');
+                }
             }, 100);
         }
         return false;
@@ -1320,27 +1438,7 @@ function getReportHTML(data) {
             if(status) totalCount++;
             if(isSesuai) sesuaiCount++;
             
-            let imgHtml = '';
-            if (Array.isArray(data[`apar_${i}_item_${idx}_foto_base64`])) {
-                imgHtml = data[`apar_${i}_item_${idx}_foto_base64`].map(src => `<img src="${src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`).join('');
-            } else if (typeof data[`apar_${i}_item_${idx}_foto_base64`] === 'string') {
-                imgHtml = `<img src="${data[`apar_${i}_item_${idx}_foto_base64`]}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`;
-            } else {
-                // Fallback to DOM elements for unsaved preview
-                const containerId = `apar_${i}_item_${idx}_preview_container`;
-                const container = document.getElementById(containerId);
-                if (container && container.querySelectorAll('img').length > 0) {
-                    const imgs = Array.from(container.querySelectorAll('img'));
-                    imgHtml = imgs.map(img => `<img src="${img.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`).join('');
-                } else {
-                    // Fallback backward compatibility
-                    const previewId = `apar_${i}_item_${idx}_preview`;
-                    const previewImg = document.getElementById(previewId);
-                    if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
-                        imgHtml = `<img src="${previewImg.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`;
-                    }
-                }
-            }
+            let imgHtml = getPhotoImgHtmlForExport(data, `apar_${i}_item_${idx}`);
             
             checklistRows += `
             <tr>
@@ -1482,25 +1580,7 @@ function getReportHTML(data) {
                 const ket = data[`${keyPrefix}_keterangan`] || '';
                 const numStr = prefix === 'evakuasi' ? String.fromCharCode(97 + idx) + '.' : (idx + 1);
                 
-                let imgHtml = '';
-                if (Array.isArray(data[`${keyPrefix}_foto_base64`])) {
-                    imgHtml = data[`${keyPrefix}_foto_base64`].map(src => `<img src="${src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`).join('');
-                } else if (typeof data[`${keyPrefix}_foto_base64`] === 'string') {
-                    imgHtml = `<img src="${data[`${keyPrefix}_foto_base64`]}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`;
-                } else {
-                    const containerId = `${keyPrefix}_preview_container`;
-                    const container = document.getElementById(containerId);
-                    if (container && container.querySelectorAll('img').length > 0) {
-                        const imgs = Array.from(container.querySelectorAll('img'));
-                        imgHtml = imgs.map(img => `<img src="${img.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`).join('');
-                    } else {
-                        const previewId = `${keyPrefix}_preview`;
-                        const previewImg = document.getElementById(previewId);
-                        if (previewImg && previewImg.src && previewImg.src.startsWith('data:image')) {
-                            imgHtml = `<img src="${previewImg.src}" style="max-height: 80px; width: auto; border-radius: 4px; display: inline-block; margin: 2px;" />`;
-                        }
-                    }
-                }
+                let imgHtml = getPhotoImgHtmlForExport(data, keyPrefix);
 
                 html += `
                 <tr>
@@ -1745,20 +1825,7 @@ async function loadReport(id) {
         });
 
         for (const key in data) {
-            if (key.endsWith('_foto_base64')) {
-                const originalKey = key.replace('_foto_base64', '');
-                const previewContainerId = `${originalKey}_preview_container`;
-                const container = document.getElementById(previewContainerId);
-                
-                if (container && Array.isArray(data[key])) {
-                    container.innerHTML = '';
-                    data[key].forEach(base64Str => {
-                        const img = document.createElement('img');
-                        img.src = base64Str;
-                        img.className = "w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm";
-                        container.appendChild(img);
-                    });
-                }
+            if (key.endsWith('_foto_urls') || key.endsWith('_foto_base64')) {
                 continue;
             }
             
@@ -1817,6 +1884,7 @@ async function loadReport(id) {
                 }
             }
         }
+        restorePhotosFromData(data);
         for(let i=1; i<=aparCount; i++) {
             if(!deletedApars.has(i)) updateAparScore(i);
         }
@@ -2331,21 +2399,7 @@ function importBackup(event) {
 
             // Iterate dan isi nilainya
             for (const key in data) {
-                if (key.endsWith('_foto_base64')) {
-                    // Restore image array ke container
-                    const originalKey = key.replace('_foto_base64', '');
-                    const previewContainerId = `${originalKey}_preview_container`;
-                    const container = document.getElementById(previewContainerId);
-                    
-                    if (container && Array.isArray(data[key])) {
-                        container.innerHTML = ''; // Bersihkan
-                        data[key].forEach(base64Str => {
-                            const img = document.createElement('img');
-                            img.src = base64Str;
-                            img.className = "w-16 h-16 object-cover rounded-lg border border-gray-200 shadow-sm";
-                            container.appendChild(img);
-                        });
-                    }
+                if (key.endsWith('_foto_urls') || key.endsWith('_foto_base64')) {
                     continue;
                 }
                 
@@ -2410,6 +2464,7 @@ function importBackup(event) {
                 }
             }
             
+            restorePhotosFromData(data);
             document.getElementById('network-error-actions')?.classList.add('hidden');
             alert('File backup berhasil dipulihkan! Semua data dan foto telah kembali. Anda bisa mencoba menyimpannya lagi ke server.');
             event.target.value = '';
