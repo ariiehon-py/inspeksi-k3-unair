@@ -428,55 +428,9 @@ async function updateDashboardOverview() {
         countPassive('tanggadarurat', checklists.tanggadarurat);
     });
     
-    document.getElementById('dash-tot-fakultas').innerText = fakultasSet.size;
-    document.getElementById('dash-tot-apar').innerText = totalApar;
-    
-    const labels = [];
-    const dataSesuai = [];
-    const dataTidakSesuai = [];
-    
-    for(const fak in statsByFak) {
-        labels.push(fak.replace('Fakultas ', '').replace('Sekolah ', ''));
-        const s = statsByFak[fak];
-        const pct = s.total > 0 ? Math.round((s.sesuai / s.total) * 100) : 0;
-        dataSesuai.push(pct);
-        dataTidakSesuai.push(100 - pct);
-    }
-    
-    const ctx = document.getElementById('dashboardChart').getContext('2d');
-    if(dashboardChartInstance) dashboardChartInstance.destroy();
-    
-    dashboardChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels.length > 0 ? labels : ['Belum Ada Data'],
-            datasets: [
-                {
-                    label: '% Sesuai',
-                    data: labels.length > 0 ? dataSesuai : [0],
-                    backgroundColor: '#16a34a',
-                    borderRadius: 4
-                },
-                {
-                    label: '% Tidak Sesuai',
-                    data: labels.length > 0 ? dataTidakSesuai : [0],
-                    backgroundColor: '#ef4444',
-                    borderRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: { stacked: true, grid: { display: false } },
-                y: { stacked: true, beginAtZero: true, max: 100 }
-            },
-            plugins: {
-                legend: { position: 'top', align: 'end' }
-            }
-        }
-    });
+    // The previous chart and stats (dash-tot-fakultas, dash-tot-apar, dashboardChart)
+    // have been removed in the UI in favor of a CSS-only chart and minimalist cards.
+    // dash-tot-laporan and dash-tot-draf are updated at the beginning of the function.
 }
 
 function startInspection() {
