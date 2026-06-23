@@ -162,6 +162,7 @@ function showLogin() {
 let currentDocId = null;
 
 function toggleSidebar() {
+    if (window.innerWidth >= 768) return; // Do not toggle on desktop
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     if (!sidebar || !overlay) return;
@@ -213,20 +214,32 @@ function showDashboard() {
 async function renderDashboardRiwayat() {
     const container = document.getElementById('dashboard-riwayat-list');
     if (!container) return;
-    container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10"><i class="fa-solid fa-spinner fa-spin text-3xl"></i><p class="mt-2">Memuat data dari Firebase...</p></div>';
+    container.innerHTML = '<div class="col-span-full text-center text-gray-400 py-10"><i class="fa-solid fa-spinner fa-spin text-2xl"></i><p class="mt-2 text-sm">Memuat data...</p></div>';
     
     let reports = await getReports();
-    // Sort descending by id (timestamp)
     reports.sort((a, b) => b.report_id - a.report_id);
-    // Take only top 8 for dashboard
-    reports = reports.slice(0, 8);
+    reports = reports.slice(0, 10);
     
     container.innerHTML = '';
     
     if(reports.length === 0) {
-        container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500 bg-white rounded-2xl border border-gray-100 border-dashed">Belum ada riwayat laporan.</div>';
+        container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400 bg-white rounded-xl border border-gray-100 border-dashed text-sm">Belum ada riwayat laporan.</div>';
         return;
     }
+    
+    // Add header row for the list
+    container.innerHTML = `
+        <div class="grid grid-cols-12 gap-4 px-4 py-3 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 hidden md:grid">
+            <div class="col-span-3">Fakultas</div>
+            <div class="col-span-4">Lokasi / Area</div>
+            <div class="col-span-2">Tanggal</div>
+            <div class="col-span-2">Status</div>
+            <div class="col-span-1 text-right">Aksi</div>
+        </div>
+        <div class="space-y-2" id="dashboard-riwayat-items"></div>
+    `;
+    
+    const listContainer = document.getElementById('dashboard-riwayat-items');
     
     reports.forEach(report => {
         const isDraft = report.status === 'draft';
@@ -234,34 +247,30 @@ async function renderDashboardRiwayat() {
         const missingCount = missing.length;
         
         const div = document.createElement('div');
-        div.className = "bg-white p-5 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-md transition relative flex flex-col justify-between";
+        div.className = "bg-white p-4 rounded-xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-sm transition flex flex-col md:grid md:grid-cols-12 gap-4 md:items-center cursor-pointer group";
+        div.onclick = () => showRiwayat();
         
         div.innerHTML = `
-            <div>
-                ${isDraft ? '<div class="absolute top-0 right-0 bg-orange-50 text-orange-600 text-[10px] font-black px-3 py-1 rounded-bl-xl rounded-tr-xl border-b border-l border-orange-100">DRAF</div>' : ''}
-                <div class="flex justify-between items-start mb-3">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full ${isDraft ? 'bg-orange-50 text-orange-500 border border-orange-100' : 'bg-green-50 text-green-500 border border-green-100'} flex items-center justify-center">
-                            <i class="fa-solid ${isDraft ? 'fa-file-pen' : 'fa-file-contract'} text-xs"></i>
-                        </div>
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${new Date(parseInt(report.report_id)).toLocaleDateString('id-ID')}</span>
-                    </div>
-                </div>
-                <h3 class="font-bold text-gray-900 text-base mb-1 line-clamp-1 pr-8">${report.fakultas || 'Tanpa Fakultas'}</h3>
-                <p class="text-xs text-gray-500 mb-4 line-clamp-1 flex items-center gap-1.5"><i class="fa-solid fa-location-dot"></i> ${report.lokasi || '-'}</p>
+            <div class="col-span-3 flex items-center gap-3">
+                <i class="fa-solid ${isDraft ? 'fa-file-pen text-gray-400' : 'fa-file-contract text-gray-700'}"></i>
+                <h3 class="font-bold text-gray-900 text-sm line-clamp-1">${report.fakultas || 'Tanpa Fakultas'}</h3>
             </div>
-            
-            <div class="pt-3 border-t border-gray-50 flex items-center justify-between">
-                <div class="flex items-center gap-2 text-xs font-medium ${isDraft ? 'text-orange-500' : 'text-gray-400'}">
-                    <i class="fa-regular ${isDraft ? 'fa-circle-xmark' : 'fa-circle-check'}"></i>
-                    <span>${isDraft ? missingCount + ' form kosong' : 'Selesai'}</span>
-                </div>
-                <button onclick="showRiwayat()" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-600 flex items-center justify-center transition-colors">
-                    <i class="fa-solid fa-arrow-right text-xs"></i>
-                </button>
+            <div class="col-span-4 text-sm text-gray-500 line-clamp-1">
+                ${report.lokasi || '-'}
+            </div>
+            <div class="col-span-2 text-xs font-medium text-gray-500">
+                ${new Date(parseInt(report.report_id)).toLocaleDateString('id-ID')}
+            </div>
+            <div class="col-span-2">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${isDraft ? 'bg-gray-100 text-gray-600' : 'bg-gray-900 text-white'}">
+                    ${isDraft ? missingCount + ' Incomplete' : 'Selesai'}
+                </span>
+            </div>
+            <div class="col-span-1 flex justify-end">
+                <i class="fa-solid fa-arrow-right text-gray-300 group-hover:text-gray-900 transition-colors"></i>
             </div>
         `;
-        container.appendChild(div);
+        listContainer.appendChild(div);
     });
 }
 
@@ -1493,42 +1502,57 @@ function applyRiwayatFilter() {
     container.classList.remove('hidden');
     emptyState.classList.add('hidden');
     
-    // Sort descending by id (timestamp)
-    reports.sort((a, b) => b.report_id - a.report_id);
+    // Add header row for the list
+    container.innerHTML = `
+        <div class="grid grid-cols-12 gap-4 px-4 py-3 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 hidden md:grid">
+            <div class="col-span-3">Fakultas</div>
+            <div class="col-span-3">Lokasi / Area</div>
+            <div class="col-span-2">Tanggal</div>
+            <div class="col-span-2">Status</div>
+            <div class="col-span-2 text-right">Aksi</div>
+        </div>
+        <div class="space-y-2" id="riwayat-items"></div>
+    `;
+    
+    const listContainer = document.getElementById('riwayat-items');
     
     reports.forEach(report => {
         const isDraft = report.status === 'draft';
         const missing = isDraft ? getMissingFields(report) : [];
-        const missingText = missing.length > 0 ? `<p class="text-xs font-bold text-red-500 mt-2"><i class="fa-solid fa-triangle-exclamation"></i> Belum diisi: ${missing.join(', ')}</p>` : '';
+        const missingCount = missing.length;
         
         const div = document.createElement('div');
-        div.className = "bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition relative";
-        if (isDraft) {
-            div.classList.add('border-orange-300', 'bg-orange-50/30');
-        }
+        div.className = "bg-white p-4 rounded-xl border border-gray-100 shadow-[0_2px_10px_rgb(0,0,0,0.02)] hover:shadow-sm transition flex flex-col md:grid md:grid-cols-12 gap-4 md:items-center";
         
         div.innerHTML = `
-            ${isDraft ? '<div class="absolute top-0 right-0 bg-orange-100 text-orange-600 text-xs font-black px-3 py-1 rounded-bl-xl rounded-tr-xl">DRAF</div>' : ''}
-            <div class="flex justify-between items-start mb-4">
-                <div class="${isDraft ? 'bg-orange-100' : 'bg-green-50 text-green-600'} text-orange-600 p-2 rounded-lg">
-                    <i class="fa-solid ${isDraft ? 'fa-file-pen' : 'fa-file-contract'}"></i>
+            <div class="col-span-3 flex items-center gap-3">
+                <i class="fa-solid ${isDraft ? 'fa-file-pen text-gray-400' : 'fa-file-contract text-gray-700'}"></i>
+                <div>
+                    <h3 class="font-bold text-gray-900 text-sm line-clamp-1">${report.fakultas || 'Tanpa Fakultas'}</h3>
+                    ${missing.length > 0 ? `<p class="text-[10px] font-bold text-red-500 mt-0.5"><i class="fa-solid fa-triangle-exclamation"></i> ${missingCount} form kosong</p>` : ''}
                 </div>
-                <span class="text-xs font-bold text-gray-400 mt-1 mr-8">${new Date(parseInt(report.report_id)).toLocaleDateString('id-ID')}</span>
             </div>
-            <h3 class="font-bold text-dark text-lg mb-1 line-clamp-1">${report.fakultas || 'Tanpa Fakultas'}</h3>
-            <p class="text-sm text-gray-500 mb-2">${report.lokasi || '-'}</p>
-            ${missingText}
-            
-            <div class="pt-4 mt-4 border-t border-gray-100 flex gap-2">
-                <button onclick="loadReport('${report.id}')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-dark py-2 rounded-lg text-sm font-bold transition">
-                    Buka Data
+            <div class="col-span-3 text-sm text-gray-500 line-clamp-1">
+                ${report.lokasi || '-'}
+            </div>
+            <div class="col-span-2 text-xs font-medium text-gray-500">
+                ${new Date(parseInt(report.report_id)).toLocaleDateString('id-ID')}
+            </div>
+            <div class="col-span-2">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${isDraft ? 'bg-gray-100 text-gray-600' : 'bg-gray-900 text-white'}">
+                    ${isDraft ? 'Draf' : 'Selesai'}
+                </span>
+            </div>
+            <div class="col-span-2 flex justify-end gap-2 mt-3 md:mt-0 pt-3 md:pt-0 border-t md:border-0 border-gray-50">
+                <button onclick="loadReport('${report.id}')" class="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-xs font-bold transition">
+                    Buka
                 </button>
-                <button onclick="deleteReport('${report.id}')" class="px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition" title="Hapus">
-                    <i class="fa-solid fa-trash-can"></i>
+                <button onclick="deleteReport('${report.id}')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition" title="Hapus">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
                 </button>
             </div>
         `;
-        container.appendChild(div);
+        listContainer.appendChild(div);
     });
 }
 
