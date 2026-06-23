@@ -384,8 +384,10 @@ async function updateDashboardOverview() {
     const finalReports = reports.filter(r => r.status === 'final' || !r.status);
     const draftReports = reports.filter(r => r.status === 'draft');
     
-    document.getElementById('dash-tot-laporan').innerText = finalReports.length;
-    document.getElementById('dash-tot-draf').innerText = draftReports.length;
+    const totLaporanEl = document.getElementById('dash-tot-laporan');
+    const totDrafEl = document.getElementById('dash-tot-draf');
+    if (totLaporanEl) totLaporanEl.innerText = finalReports.length;
+    if (totDrafEl) totDrafEl.innerText = draftReports.length;
     
     let totalApar = 0;
     const fakultasSet = new Set();
