@@ -124,6 +124,34 @@ const surveyorMap = {
 };
 
 // View Management
+function switchView(activeViewId) {
+    const views = ['login-view', 'app-view', 'dashboard-view', 'form-view', 'riwayat-view', 'statistik-view'];
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === activeViewId) {
+                el.classList.remove('hidden');
+                if (id === 'app-view' || id === 'login-view') {
+                    el.style.display = 'flex';
+                } else {
+                    el.style.display = 'block';
+                }
+            } else {
+                if (id === 'app-view' && ['dashboard-view', 'form-view', 'riwayat-view', 'statistik-view'].includes(activeViewId)) {
+                    el.classList.remove('hidden');
+                    el.style.display = 'flex';
+                } else if (id === 'login-view' && activeViewId !== 'login-view') {
+                    el.classList.add('hidden');
+                    el.style.display = 'none';
+                } else if (id !== 'app-view') {
+                    el.classList.add('hidden');
+                    el.style.display = 'none';
+                }
+            }
+        }
+    });
+}
+
 function login(e) {
     e.preventDefault();
     const user = document.getElementById('username').value.toLowerCase().trim();
@@ -155,8 +183,7 @@ function checkAuth() {
 }
 
 function showLogin() {
-    document.getElementById('login-view').classList.remove('hidden');
-    document.getElementById('app-view').classList.add('hidden');
+    switchView('login-view');
 }
 
 let currentDocId = null;
@@ -200,13 +227,7 @@ function showDashboard() {
         const welcomeText = document.getElementById('welcome-text');
         if (welcomeText) welcomeText.innerText = `Hi, ${userName}!`;
 
-        document.getElementById('login-view').classList.add('hidden');
-        document.getElementById('app-view').classList.remove('hidden');
-        document.getElementById('form-view').classList.add('hidden');
-        document.getElementById('riwayat-view').classList.add('hidden');
-        document.getElementById('statistik-view').classList.add('hidden');
-        document.getElementById('dashboard-view').classList.remove('hidden');
-        
+        switchView('dashboard-view');
         updateSidebarActive('nav-dashboard');
         
         updateDashboardOverview();
@@ -569,23 +590,14 @@ async function updateDashboardOverview() {
 
 function startInspection() {
     try {
-        document.getElementById('dashboard-view').classList.add('hidden');
-        document.getElementById('riwayat-view').classList.add('hidden');
-        document.getElementById('statistik-view').classList.add('hidden');
-        document.getElementById('form-view').classList.remove('hidden');
+        switchView('form-view');
         window.scrollTo(0, 0);
     } catch(e) { alert("Error startInspection: " + e.message); console.error(e); }
 }
 
 function showRiwayat() {
     try {
-        document.getElementById('login-view').classList.add('hidden');
-        document.getElementById('app-view').classList.remove('hidden');
-        document.getElementById('dashboard-view').classList.add('hidden');
-        document.getElementById('form-view').classList.add('hidden');
-        document.getElementById('riwayat-view').classList.remove('hidden');
-        document.getElementById('statistik-view').classList.add('hidden');
-        
+        switchView('riwayat-view');
         updateSidebarActive('nav-riwayat');
         renderRiwayat();
     } catch(e) { alert("Error showRiwayat: " + e.message); console.error(e); }
@@ -593,13 +605,7 @@ function showRiwayat() {
 
 function showStatistik() {
     try {
-        document.getElementById('login-view').classList.add('hidden');
-        document.getElementById('app-view').classList.remove('hidden');
-        document.getElementById('dashboard-view').classList.add('hidden');
-        document.getElementById('form-view').classList.add('hidden');
-        document.getElementById('riwayat-view').classList.add('hidden');
-        document.getElementById('statistik-view').classList.remove('hidden');
-        
+        switchView('statistik-view');
         updateSidebarActive('nav-statistik');
         renderStatistik();
     } catch(e) { alert("Error showStatistik: " + e.message); console.error(e); }
@@ -1658,10 +1664,7 @@ async function loadReport(id) {
     if(data) {
         currentDocId = id;
         
-        document.getElementById('dashboard-view').classList.add('hidden');
-        document.getElementById('riwayat-view').classList.add('hidden');
-        document.getElementById('statistik-view').classList.add('hidden');
-        document.getElementById('form-view').classList.remove('hidden');
+        switchView('form-view');
         window.scrollTo(0, 0);
         
         document.getElementById('apar-container').innerHTML = '';
