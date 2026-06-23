@@ -161,6 +161,38 @@ function showLogin() {
 
 let currentDocId = null;
 
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    
+    if(sidebar.classList.contains('-translate-x-full')) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+    }
+}
+
+function updateSidebarActive(activeId) {
+    const navs = ['nav-dashboard', 'nav-riwayat', 'nav-statistik'];
+    navs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === activeId) {
+                el.classList.add('bg-gray-100', 'text-gray-900');
+                el.classList.remove('text-gray-500', 'hover:bg-gray-50');
+                el.querySelector('i').classList.add('text-gray-500');
+            } else {
+                el.classList.remove('bg-gray-100', 'text-gray-900');
+                el.classList.add('text-gray-500', 'hover:bg-gray-50', 'hover:text-gray-900');
+                el.querySelector('i').classList.remove('text-gray-500');
+            }
+        }
+    });
+}
+
 function showDashboard() {
     const userName = localStorage.getItem('k3_user_name') || 'Surveyor';
     const welcomeText = document.getElementById('welcome-text');
@@ -172,9 +204,67 @@ function showDashboard() {
     document.getElementById('form-view').classList.add('hidden');
     document.getElementById('riwayat-view').classList.add('hidden');
     document.getElementById('statistik-view').classList.add('hidden');
-    window.scrollTo(0, 0);
+    
+    updateSidebarActive('nav-dashboard');
     updateDashboardOverview();
+    renderDashboardRiwayat();
 }
+
+async function renderDashboardRiwayat() {
+    const container = document.getElementById('dashboard-riwayat-list');
+    if (!container) return;
+    container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10"><i class="fa-solid fa-spinner fa-spin text-3xl"></i><p class="mt-2">Memuat data dari Firebase...</p></div>';
+    
+    let reports = await getReports();
+    // Sort descending by id (timestamp)
+    reports.sort((a, b) => b.report_id - a.report_id);
+    // Take only top 8 for dashboard
+    reports = reports.slice(0, 8);
+    
+    container.innerHTML = '';
+    
+    if(reports.length === 0) {
+        container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500 bg-white rounded-2xl border border-gray-100 border-dashed">Belum ada riwayat laporan.</div>';
+        return;
+    }
+    
+    reports.forEach(report => {
+        const isDraft = report.status === 'draft';
+        const missing = isDraft ? getMissingFields(report) : [];
+        const missingCount = missing.length;
+        
+        const div = document.createElement('div');
+        div.className = "bg-white p-5 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:shadow-md transition relative flex flex-col justify-between";
+        
+        div.innerHTML = `
+            <div>
+                ${isDraft ? '<div class="absolute top-0 right-0 bg-orange-50 text-orange-600 text-[10px] font-black px-3 py-1 rounded-bl-xl rounded-tr-xl border-b border-l border-orange-100">DRAF</div>' : ''}
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full ${isDraft ? 'bg-orange-50 text-orange-500 border border-orange-100' : 'bg-green-50 text-green-500 border border-green-100'} flex items-center justify-center">
+                            <i class="fa-solid ${isDraft ? 'fa-file-pen' : 'fa-file-contract'} text-xs"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${new Date(parseInt(report.report_id)).toLocaleDateString('id-ID')}</span>
+                    </div>
+                </div>
+                <h3 class="font-bold text-gray-900 text-base mb-1 line-clamp-1 pr-8">${report.fakultas || 'Tanpa Fakultas'}</h3>
+                <p class="text-xs text-gray-500 mb-4 line-clamp-1 flex items-center gap-1.5"><i class="fa-solid fa-location-dot"></i> ${report.lokasi || '-'}</p>
+            </div>
+            
+            <div class="pt-3 border-t border-gray-50 flex items-center justify-between">
+                <div class="flex items-center gap-2 text-xs font-medium ${isDraft ? 'text-orange-500' : 'text-gray-400'}">
+                    <i class="fa-regular ${isDraft ? 'fa-circle-xmark' : 'fa-circle-check'}"></i>
+                    <span>${isDraft ? missingCount + ' form kosong' : 'Selesai'}</span>
+                </div>
+                <button onclick="showRiwayat()" class="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-600 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
 
 function startNewInspection() {
     document.getElementById('inspection-form').reset();
@@ -389,20 +479,26 @@ function startInspection() {
 }
 
 function showRiwayat() {
+    document.getElementById('login-view').classList.add('hidden');
+    document.getElementById('app-view').classList.remove('hidden');
     document.getElementById('dashboard-view').classList.add('hidden');
     document.getElementById('form-view').classList.add('hidden');
-    document.getElementById('statistik-view').classList.add('hidden');
     document.getElementById('riwayat-view').classList.remove('hidden');
-    window.scrollTo(0, 0);
+    document.getElementById('statistik-view').classList.add('hidden');
+    
+    updateSidebarActive('nav-riwayat');
     renderRiwayat();
 }
 
 function showStatistik() {
+    document.getElementById('login-view').classList.add('hidden');
+    document.getElementById('app-view').classList.remove('hidden');
     document.getElementById('dashboard-view').classList.add('hidden');
     document.getElementById('form-view').classList.add('hidden');
     document.getElementById('riwayat-view').classList.add('hidden');
     document.getElementById('statistik-view').classList.remove('hidden');
-    window.scrollTo(0, 0);
+    
+    updateSidebarActive('nav-statistik');
     renderStatistik();
 }
 

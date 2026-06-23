@@ -74,118 +74,155 @@
     </div>
 
     <!-- MAIN APP VIEW -->
-    <div id="app-view" class="hidden pb-20">
+    <div id="app-view" class="hidden h-screen overflow-hidden flex bg-[#f6f6f0]">
         
-        <!-- Modern Navbar -->
-        <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-200">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16 items-center">
-                    <div class="flex items-center gap-3 cursor-pointer" onclick="showDashboard()">
-                        <img src="assets/logo.png" alt="Logo K3" class="w-9 h-9 object-contain">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col flex-shrink-0 transition-transform transform -translate-x-full md:translate-x-0 absolute md:relative z-40 h-full">
+            <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-[#f6f6f0] rounded-lg p-1.5 border border-gray-100">
+                        <img src="assets/logo.png" alt="Logo K3" class="w-full h-full object-contain mix-blend-multiply">
                     </div>
-                    <div class="hidden md:flex items-center gap-6 font-semibold text-sm text-gray-600">
-                        <a href="#" onclick="showDashboard()" class="text-dark hover:text-primary transition">Beranda</a>
-                        <a href="#" onclick="showRiwayat()" class="hover:text-primary transition">Riwayat</a>
-                        <button onclick="logout()" class="bg-gray-100 text-gray-700 px-5 py-2 rounded-lg hover:bg-gray-200 transition font-bold">
-                            Keluar
+                    <span class="font-bold text-gray-900 tracking-tight">Inspeksi K3</span>
+                </div>
+                <!-- Close btn for mobile -->
+                <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-gray-900">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 flex-1 overflow-y-auto">
+                <p class="text-[10px] font-bold text-gray-400 mb-3 px-3 tracking-widest uppercase">Menu Utama</p>
+                <ul class="space-y-1">
+                    <li>
+                        <a href="#" onclick="showDashboard(); toggleSidebar()" id="nav-dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-900 bg-gray-100 font-medium transition-colors text-sm">
+                            <i class="fa-solid fa-house w-5 text-center text-gray-500"></i> Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showRiwayat(); toggleSidebar()" id="nav-riwayat" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors text-sm">
+                            <i class="fa-solid fa-folder-open w-5 text-center"></i> Riwayat Data
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showStatistik(); toggleSidebar()" id="nav-statistik" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium transition-colors text-sm">
+                            <i class="fa-solid fa-chart-pie w-5 text-center"></i> Grafik & Statistik
+                        </a>
+                    </li>
+                    <li class="pt-4 mt-4 border-t border-gray-100">
+                        <button onclick="startNewInspection(); toggleSidebar()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-white bg-[#1a1a1a] hover:bg-black font-medium transition-colors shadow-[0_4px_14px_0_rgb(0,0,0,0.1)] text-sm">
+                            <i class="fa-solid fa-plus w-5 text-center"></i> Inspeksi Baru
                         </button>
-                    </div>
-                </div>
+                    </li>
+                </ul>
             </div>
-        </nav>
-
-        <!-- DASHBOARD VIEW -->
-        <div id="dashboard-view" class="block animate-fade-in pt-8">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
-                <div class="text-center md:text-left mb-8">
-                    <h2 id="welcome-text" class="text-xl font-bold text-gray-500 mb-2"></h2>
-                    <h1 class="text-3xl font-bold text-dark mb-2">Dashboard Inspeksi</h1>
-                    <p class="text-gray-500">Data hasil inspeksi K3 Universitas Airlangga</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer flex gap-4 items-start" onclick="startNewInspection()">
-                        <div class="bg-green-50 text-primary p-3 rounded-xl shrink-0">
-                            <i class="fa-solid fa-clipboard-check text-xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-dark text-lg mb-1">Mulai Inspeksi Baru</h3>
-                            <p class="text-sm text-gray-500 leading-relaxed">Isi formulir inspeksi.</p>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer flex gap-4 items-start" onclick="showStatistik()">
-                        <div class="bg-green-50 text-primary p-3 rounded-xl shrink-0">
-                            <i class="fa-solid fa-chart-pie text-xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-dark text-lg mb-1">Statistik</h3>
-                            <p class="text-sm text-gray-500 leading-relaxed">Lihat rekapitulasi data tingkat kesesuaian dari 17+ fakultas dan unit.</p>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer flex gap-4 items-start" onclick="showRiwayat()">
-                        <div class="bg-green-50 text-primary p-3 rounded-xl shrink-0">
-                            <i class="fa-solid fa-folder-open text-xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-dark text-lg mb-1">Riwayat Inspeksi</h3>
-                            <p class="text-sm text-gray-500 leading-relaxed">Akses kembali draf laporan atau draf yang telah tersimpan.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- OVERVIEW STATS -->
-                <div class="mt-12">
-                    <h2 class="text-xl font-bold text-dark mb-6">Ringkasan Sistem</h2>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-1 space-y-4">
-                            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-gray-500 font-bold mb-1">Total Laporan</p>
-                                    <h4 class="text-3xl font-black text-dark" id="dash-tot-laporan">0</h4>
-                                </div>
-                                <div class="bg-gray-50 w-12 h-12 rounded-full flex items-center justify-center text-gray-400">
-                                    <i class="fa-solid fa-file-lines text-xl"></i>
-                                </div>
-                            </div>
-                            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-gray-500 font-bold mb-1">Draf Berjalan</p>
-                                    <h4 class="text-3xl font-black text-orange-500" id="dash-tot-draf">0</h4>
-                                </div>
-                                <div class="bg-orange-50 w-12 h-12 rounded-full flex items-center justify-center text-orange-400">
-                                    <i class="fa-solid fa-clock text-xl"></i>
-                                </div>
-                            </div>
-                            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-gray-500 font-bold mb-1">Fakultas Terinspeksi</p>
-                                    <h4 class="text-3xl font-black text-dark" id="dash-tot-fakultas">0</h4>
-                                </div>
-                                <div class="bg-blue-50 w-12 h-12 rounded-full flex items-center justify-center text-blue-500">
-                                    <i class="fa-solid fa-building-columns text-xl"></i>
-                                </div>
-                            </div>
-                            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
-                                <div>
-                                    <p class="text-sm text-gray-500 font-bold mb-1">Total APAR</p>
-                                    <h4 class="text-3xl font-black text-dark" id="dash-tot-apar">0</h4>
-                                </div>
-                                <div class="bg-green-50 w-12 h-12 rounded-full flex items-center justify-center text-green-500">
-                                    <i class="fa-solid fa-fire-extinguisher text-xl"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                            <h3 class="text-sm font-bold text-gray-500 mb-4">Grafik Kesesuaian K3 per Fakultas</h3>
-                            <div class="relative h-64 w-full">
-                                <canvas id="dashboardChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+            
+            <div class="p-4 border-t border-gray-100">
+                <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 font-medium transition-colors text-sm">
+                    <i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Keluar
+                </button>
             </div>
-        </div>
+        </aside>
+
+        <!-- Overlay for mobile sidebar -->
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-30 hidden md:hidden transition-opacity"></div>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 h-full overflow-y-auto relative flex flex-col font-sans">
+            <!-- Mobile Header -->
+            <header class="md:hidden bg-white border-b border-gray-200 p-4 flex justify-between items-center sticky top-0 z-20">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-[#f6f6f0] rounded-lg p-1.5 border border-gray-100">
+                        <img src="assets/logo.png" alt="Logo K3" class="w-full h-full object-contain mix-blend-multiply">
+                    </div>
+                    <span class="font-bold text-gray-900 tracking-tight text-sm">Inspeksi K3</span>
+                </div>
+                <button onclick="toggleSidebar()" class="text-gray-600 hover:text-gray-900 focus:outline-none p-1">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </header>
+
+            <div class="p-4 sm:p-6 md:p-8 lg:p-10 flex-1">
+                
+                <!-- DASHBOARD VIEW -->
+                <div id="dashboard-view" class="block animate-fade-in">
+                    <!-- Dashboard Header -->
+                    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+                        <div>
+                            <h2 id="welcome-text" class="text-gray-500 font-medium mb-1 text-sm">Hi, Surveyor!</h2>
+                            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">Overview</h1>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white p-1 rounded-xl border border-gray-200 shadow-sm text-sm">
+                            <span class="px-4 py-2 font-medium text-gray-500 cursor-pointer hover:text-gray-900 transition-colors">Semua</span>
+                            <span class="px-4 py-2 bg-[#f6f6f0] rounded-lg font-bold text-gray-900 border border-gray-200 shadow-sm">Terkini</span>
+                        </div>
+                    </div>
+
+                    <!-- OVERVIEW STATS (Minimalist) -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
+                        <div class="bg-white p-5 md:p-6 rounded-[20px] border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-[#f6f6f0] border border-gray-200 flex items-center justify-center text-gray-700">
+                                    <i class="fa-solid fa-file-contract text-sm"></i>
+                                </div>
+                                <p class="text-xs font-bold text-gray-500 tracking-wider uppercase">Laporan</p>
+                            </div>
+                            <h4 class="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter" id="dash-tot-laporan">0</h4>
+                        </div>
+                        
+                        <div class="bg-white p-5 md:p-6 rounded-[20px] border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500">
+                                    <i class="fa-solid fa-clock text-sm"></i>
+                                </div>
+                                <p class="text-xs font-bold text-gray-500 tracking-wider uppercase">Draf</p>
+                            </div>
+                            <h4 class="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter" id="dash-tot-draf">0</h4>
+                        </div>
+
+                        <div class="bg-white p-5 md:p-6 rounded-[20px] border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col justify-between">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-8 h-8 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
+                                    <i class="fa-solid fa-building-columns text-sm"></i>
+                                </div>
+                                <p class="text-xs font-bold text-gray-500 tracking-wider uppercase">Fakultas</p>
+                            </div>
+                            <h4 class="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter" id="dash-tot-fakultas">0</h4>
+                        </div>
+
+                        <div class="bg-[#1a1a1a] p-5 md:p-6 rounded-[20px] shadow-[0_8px_30px_rgb(0,0,0,0.1)] flex flex-col justify-between text-white relative overflow-hidden group cursor-pointer" onclick="startNewInspection()">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110"></div>
+                            <div>
+                                <p class="text-xs font-bold text-white/60 tracking-wider uppercase mb-1">Aksi Cepat</p>
+                                <h3 class="text-lg font-bold">Mulai Inspeksi</h3>
+                            </div>
+                            <div class="mt-4 flex items-center justify-between">
+                                <span class="text-sm text-white/80 font-medium">Buat laporan baru</span>
+                                <div class="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center">
+                                    <i class="fa-solid fa-arrow-right text-sm"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIWAYAT TERBARU (Read-only list on Dashboard) -->
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold text-gray-900 tracking-tight">Riwayat Terkini</h2>
+                            <button onclick="showRiwayat()" class="text-sm font-bold text-gray-500 hover:text-gray-900 flex items-center gap-1.5 transition-colors">
+                                Lihat Semua <i class="fa-solid fa-arrow-right text-xs"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Dashboard Riwayat Container -->
+                        <div id="dashboard-riwayat-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                            <div class="col-span-full text-center py-12 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100 border-dashed">
+                                <i class="fa-solid fa-circle-notch fa-spin mb-3 text-2xl"></i><br>
+                                Memuat data...
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
         <!-- FORM VIEW -->
         <div id="form-view" class="hidden">
@@ -563,7 +600,8 @@
                 </div>
             </div>
         </div>
-
+        
+        </main>
     </div>
 
     <!-- HIDDEN PDF TEMPLATE -->
