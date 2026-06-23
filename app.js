@@ -1405,8 +1405,30 @@ function getReportHTML(data) {
     const buildPassiveSection = (prefix, title, desc, list, hasHeaderTable) => {
         if(data[`no_${prefix}`] === '1') return;
 
-        let bkpDel = new Set(data[`deleted${prefix.charAt(0).toUpperCase() + prefix.slice(1)}s`] || []);
-        let bkpCount = data[`${prefix}Count`] || (prefix === 'detector' ? 1 : 0);
+        let bkpDel;
+        const propDelName = `deleted${prefix.charAt(0).toUpperCase() + prefix.slice(1)}s`;
+        if (data[propDelName] !== undefined) {
+            bkpDel = new Set(data[propDelName]);
+        } else {
+            if (prefix === 'firealarm') bkpDel = deletedFirealarms;
+            else if (prefix === 'evakuasi') bkpDel = deletedEvakuasis;
+            else if (prefix === 'pintudarurat') bkpDel = deletedPintudarurats;
+            else if (prefix === 'tanggadarurat') bkpDel = deletedTanggadarurats;
+            else bkpDel = new Set();
+        }
+
+        let bkpCount;
+        const propCountName = `${prefix}Count`;
+        if (data[propCountName] !== undefined && data[propCountName] !== '') {
+            bkpCount = parseInt(data[propCountName]);
+        } else {
+            if (prefix === 'firealarm') bkpCount = firealarmCount;
+            else if (prefix === 'evakuasi') bkpCount = evakuasiCount;
+            else if (prefix === 'pintudarurat') bkpCount = pintudaruratCount;
+            else if (prefix === 'tanggadarurat') bkpCount = tanggadaruratCount;
+            else if (prefix === 'detector') bkpCount = 1;
+            else bkpCount = 0;
+        }
 
         // Jika detector, paksa loop 1 kali
         if (prefix === 'detector') {
